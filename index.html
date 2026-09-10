@@ -32,6 +32,7 @@
       animation: bonusPop 3.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
   </style>
+  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, update, onValue, push, get, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -60,6 +61,7 @@
     let cachedPlayers = {};
     let botTimeouts = [];
     let lastNotifiedBonusQ = 0;
+    let currentObservedQNum = null;
 
     window.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -113,6 +115,7 @@
       const roomId = document.getElementById("joinRoomId").value.trim();
       const name = document.getElementById("joinPlayerName").value.trim();
       const pass = document.getElementById("joinRoomPass").value.trim();
+      const initialScore = parseInt(document.getElementById("joinInitialScore").value) || 0;
 
       if (!roomId || roomId.length !== 4) return alert("4桁のルーム番号を入力してください");
       if (!name) return alert("お名前を入力してください");
@@ -137,7 +140,8 @@
 
       await update(ref(db, `rooms/${roomId}/players/${myPlayerId}`), {
         name: myPlayerName,
-        score: 0,
+        baseScore: initialScore,
+        score: initialScore,
         history: {}
       });
 
@@ -208,6 +212,12 @@
           pointConfig: { fast_win: 3, stand_win: 2, norm_win: 1, fast_lose: -3, stand_lose: -2, norm_lose: 0, enable_bonus: true, solo_bonus: 2, few_bonus: 1, few_threshold: 3 }
         };
         window.currentState = state;
+
+        if (currentObservedQNum !== state.qNum) {
+          currentObservedQNum = state.qNum;
+          highlightSelectedButton(null);
+        }
+
         renderPlayerUI(state);
         updateSubmissionProgress();
 
@@ -244,10 +254,15 @@
             document.getElementById("stickyMyRank").innerText = rankStr;
             document.getElementById("stickyMyScore").innerText = `${me.score || 0} pts`;
 
-            const currentQ = window.currentState?.qNum || 1;
-            const myHist = me.history?.[`q${currentQ}`];
-            if (myHist && myHist.bonus && lastNotifiedBonusQ !== currentQ) {
-              lastNotifiedBonusQ = currentQ;
+            const curQ = window.currentState?.qNum || 1;
+            const myAction = me.history?.[`q${curQ}`]?.action;
+            if (myAction) {
+              highlightSelectedButton(myAction);
+            }
+
+            const myHist = me.history?.[`q${curQ}`];
+            if (myHist && myHist.bonus && lastNotifiedBonusQ !== curQ) {
+              lastNotifiedBonusQ = curQ;
               triggerBonusBanner(myHist.bonus, `+${myHist.pts}pt`);
             }
           }
@@ -272,6 +287,7 @@
         }).join("");
 
         updateSubmissionProgress();
+        renderHostPlayerManagerList(playerList);
       });
     }
 
@@ -438,7 +454,7 @@
           updates[`rooms/${currentRoomId}/players/${w.id}/history/${qKey}/pts`] = newPts;
           updates[`rooms/${currentRoomId}/players/${w.id}/history/${qKey}/bonus`] = bonusType;
 
-          let total = 0;
+          let total = players[w.id].baseScore || 0;
           Object.entries(players[w.id].history || {}).forEach(([k, v]) => {
             if (k === qKey) total += newPts;
             else total += (v.pts || 0);
@@ -490,24 +506,24 @@
 
     function highlightSelectedButton(actionKey) {
       document.querySelectorAll('.score-action-btn').forEach(btn => {
-        btn.classList.remove('ring-2', 'ring-blue-400', 'brightness-125');
+        btn.classList.remove('ring-4', 'ring-blue-400', 'scale-[0.98]', 'brightness-125');
       });
       if (actionKey) {
         const target = document.getElementById(`btn-${actionKey}`);
-        if (target) target.classList.add('ring-2', 'ring-blue-400', 'brightness-125');
+        if (target) target.classList.add('ring-4', 'ring-blue-400', 'scale-[0.98]', 'brightness-125');
       }
     }
 
     function recalcMyTotalScore() {
-      onValue(ref(db, `rooms/${currentRoomId}/players/${myPlayerId}/history`), (snapshot) => {
-        const history = snapshot.val() || {};
-        let total = 0;
+      onValue(ref(db, `rooms/${currentRoomId}/players/${myPlayerId}`), (snapshot) => {
+        const pData = snapshot.val() || {};
+        const history = pData.history || {};
+        let total = pData.baseScore || 0;
         Object.values(history).forEach(h => { total += (h.pts || 0); });
         update(ref(db, `rooms/${currentRoomId}/players/${myPlayerId}`), { score: total });
       }, { onlyOnce: true });
     }
 
-    // --- ステッパー操作関数 ---
     window.stepValue = (id, delta) => {
       const input = document.getElementById(id);
       let val = parseInt(input.value) || 0;
@@ -622,7 +638,7 @@
           updates[`rooms/${currentRoomId}/players/${pid}/history/q${qNum}/pts`] = 0;
           updates[`rooms/${currentRoomId}/players/${pid}/history/q${qNum}/action`] = "void";
         }
-        let newTotal = 0;
+        let newTotal = pData.baseScore || 0;
         Object.entries(hist).forEach(([qk, qVal]) => {
           if (qk === `q${qNum}`) return;
           newTotal += (qVal.pts || 0);
@@ -635,17 +651,57 @@
     };
 
     window.hostResetScores = () => {
-      if (!confirm("全員の得点をリセットしますか？")) return;
+      if (!confirm("全員の得点を初期状態（持ち点）にリセットしますか？")) return;
       onValue(ref(db, `rooms/${currentRoomId}/players`), (snap) => {
         const players = snap.val() || {};
         const updates = {};
-        Object.keys(players).forEach(id => {
-          updates[`rooms/${currentRoomId}/players/${id}/score`] = 0;
+        Object.entries(players).forEach(([id, p]) => {
+          updates[`rooms/${currentRoomId}/players/${id}/score`] = p.baseScore || 0;
           updates[`rooms/${currentRoomId}/players/${id}/history`] = {};
         });
         update(ref(db), updates);
       }, { onlyOnce: true });
     };
+
+    // --- 出題者による個別得点修正 ---
+    window.modifyPlayerScore = async (playerId, delta) => {
+      if (!currentRoomId || !cachedPlayers[playerId]) return;
+      const currentScore = cachedPlayers[playerId].score || 0;
+      const newScore = currentScore + delta;
+      await update(ref(db, `rooms/${currentRoomId}/players/${playerId}`), {
+        score: newScore
+      });
+    };
+
+    window.setPlayerScoreDirect = async (playerId, inputElem) => {
+      if (!currentRoomId || !cachedPlayers[playerId]) return;
+      const newScore = parseInt(inputElem.value) || 0;
+      await update(ref(db, `rooms/${currentRoomId}/players/${playerId}`), {
+        score: newScore
+      });
+    };
+
+    function renderHostPlayerManagerList(players) {
+      const container = document.getElementById("playerManagerList");
+      if (!container) return;
+      if (!players.length) {
+        container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">参加者がいません</p>';
+        return;
+      }
+      container.innerHTML = players.map(p => `
+        <div class="p-2 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-xs text-slate-200 truncate">${p.name} ${p.isBot ? '<span class="text-[9px] text-slate-500">Bot</span>' : ''}</div>
+            <div class="text-[10px] text-slate-400">初期持ち点: ${p.baseScore || 0}pt</div>
+          </div>
+          <div class="flex items-center space-x-1 shrink-0">
+            <button onclick="modifyPlayerScore('${p.id}', -1)" class="w-6 h-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded font-bold text-xs">-1</button>
+            <input type="number" value="${p.score || 0}" onchange="setPlayerScoreDirect('${p.id}', this)" class="w-12 bg-slate-900 border border-slate-700 rounded text-center py-0.5 text-xs text-white font-bold font-mono">
+            <button onclick="modifyPlayerScore('${p.id}', 1)" class="w-6 h-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded font-bold text-xs">+1</button>
+          </div>
+        </div>
+      `).join("");
+    }
 
     window.addMockPlayers = async (count) => {
       if (!currentRoomId) return;
@@ -657,6 +713,7 @@
         const botId = `bot_${Date.now()}_${botIndex}`;
         updates[`rooms/${currentRoomId}/players/${botId}`] = {
           name: `Bot ${botIndex}`,
+          baseScore: 0,
           score: 0,
           history: {},
           isBot: true
@@ -710,7 +767,7 @@
           const hist = botData.history || {};
           hist[qKey] = { action: randomAction, pts: pts };
 
-          let total = 0;
+          let total = botData.baseScore || 0;
           Object.values(hist).forEach(h => { total += (h.pts || 0); });
 
           await update(ref(db, `rooms/${currentRoomId}/players/${botId}`), {
@@ -768,7 +825,6 @@
       }
     }
 
-    // --- 設定モーダル制御 ---
     window.openSettingsModal = () => {
       document.getElementById("settingsModal").classList.remove("hidden");
       renderQuestionManagerList();
@@ -787,8 +843,13 @@
       document.getElementById("tabBtnQuestionSettings").classList.toggle("text-blue-400", tab === 'questions');
       document.getElementById("tabBtnQuestionSettings").classList.toggle("text-slate-400", tab !== 'questions');
 
+      document.getElementById("tabBtnPlayerSettings").classList.toggle("border-blue-500", tab === 'players');
+      document.getElementById("tabBtnPlayerSettings").classList.toggle("text-blue-400", tab === 'players');
+      document.getElementById("tabBtnPlayerSettings").classList.toggle("text-slate-400", tab !== 'players');
+
       document.getElementById("settingsTabContentPoints").classList.toggle("hidden", tab !== 'points');
       document.getElementById("settingsTabContentQuestions").classList.toggle("hidden", tab !== 'questions');
+      document.getElementById("settingsTabContentPlayers").classList.toggle("hidden", tab !== 'players');
     };
 
     function renderQuestionManagerList() {
@@ -814,6 +875,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white relative">
 
+  <!-- ボーナス発生トースト演出 -->
   <div id="bonusBannerModal" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-11/12 max-w-xs">
     <div class="bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 text-slate-950 p-3 rounded-2xl shadow-2xl border-2 border-yellow-200 flex flex-col items-center text-center">
       <span id="bonusBannerTitle" class="text-xs font-black tracking-wider uppercase drop-shadow-sm">BONUS</span>
@@ -821,6 +883,7 @@
     </div>
   </div>
 
+  <!-- 認証・ルーム選択画面 -->
   <div id="authView" class="max-w-xs mx-auto px-4 min-h-screen flex flex-col justify-center space-y-4">
     <div class="text-center">
       <h1 class="text-xl font-bold text-white tracking-tight">BoardQuiz Live</h1>
@@ -838,9 +901,15 @@
           <label class="text-[10px] text-slate-400 block mb-0.5">名前 / 席番号</label>
           <input type="text" id="joinPlayerName" placeholder="名前" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
         </div>
-        <div>
-          <label class="text-[10px] text-slate-400 block mb-0.5">パスワード (任意)</label>
-          <input type="password" id="joinRoomPass" placeholder="空欄可" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+        <div class="grid grid-cols-2 gap-1.5">
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-0.5">持ち点 (初期点)</label>
+            <input type="number" id="joinInitialScore" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white text-center font-bold focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-0.5">合言葉 (任意)</label>
+            <input type="password" id="joinRoomPass" placeholder="空欄可" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          </div>
         </div>
       </div>
       <button onclick="joinRoom()" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition">
@@ -858,8 +927,10 @@
     </div>
   </div>
 
-  <div id="mainAppView" class="hidden max-w-sm mx-auto min-h-screen flex flex-col pb-16">
-    <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-40 px-3 py-2 flex flex-col gap-1.5">
+  <!-- メインアプリ画面 -->
+  <div id="mainAppView" class="hidden max-w-sm mx-auto h-[100dvh] flex flex-col overflow-hidden">
+    <!-- ヘッダー -->
+    <header class="bg-slate-900/95 border-b border-slate-800 px-3 py-2 flex flex-col gap-1.5 shrink-0 z-40">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-2">
           <button onclick="leaveRoom()" class="text-[11px] text-slate-400 hover:text-rose-400">退出</button>
@@ -874,80 +945,85 @@
           </div>
         </div>
       </div>
+      <!-- 企画名表示 -->
       <div class="flex justify-between items-center px-0.5">
         <span id="displayEventTitle" class="text-xs font-bold text-slate-200 truncate">ボードクイズ企画</span>
       </div>
     </header>
 
-    <main class="flex-1 p-3 space-y-2.5">
+    <!-- メイン領域 -->
+    <main class="flex-1 overflow-hidden p-2.5 flex flex-col">
 
-      <div id="playerView" class="space-y-2.5">
-        <div class="bg-slate-900 border border-slate-800 px-3.5 py-2.5 rounded-xl space-y-1.5">
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] text-slate-400">合計得点</span>
-            <span id="myCurrentScore" class="text-xl font-black text-blue-400 tracking-tight">0 pts</span>
-          </div>
-          <div class="space-y-1 pt-1 border-t border-slate-800/60">
-            <div class="flex justify-between text-[10px] text-slate-400 font-mono">
-              <span>採点進捗</span>
-              <span id="playerSubmissionText">0 / 0人</span>
+      <!-- 1. 解答者画面 -->
+      <div id="playerView" class="h-full flex flex-col justify-between overflow-hidden">
+        <div class="flex-1 overflow-y-auto space-y-2 pr-0.5">
+          <div class="bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="text-[11px] text-slate-400">合計得点</span>
+              <span id="myCurrentScore" class="text-lg font-black text-blue-400 tracking-tight">0 pts</span>
             </div>
-            <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
-              <div id="playerProgressBar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+            <div class="space-y-0.5 pt-0.5 border-t border-slate-800/60">
+              <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                <span>採点進捗</span>
+                <span id="playerSubmissionText">0 / 0人</span>
+              </div>
+              <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                <div id="playerProgressBar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
+            <div class="flex justify-between items-center">
+              <span id="pQNum" class="text-xs font-mono font-bold text-slate-400">Q1</span>
+              <span id="pStatusBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">待機中</span>
+            </div>
+            
+            <div id="pQText" class="text-sm font-semibold text-slate-100 min-h-[42px] leading-snug break-words">
+              出題待機中
+            </div>
+            
+            <div id="pAnswerBox" class="hidden space-y-1.5 pt-1.5 border-t border-slate-800/60">
+              <div class="bg-blue-950/40 border border-blue-800/40 p-2 rounded-lg">
+                <span class="text-[9px] font-bold text-blue-400 block uppercase mb-0.5">正解</span>
+                <span id="pAText" class="text-sm font-bold text-white">--</span>
+              </div>
+              <div id="pCommentBox" class="hidden bg-slate-950 p-2 rounded-lg border border-slate-800">
+                <span id="pCText" class="text-[11px] text-slate-300 leading-tight">--</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
-          <div class="flex justify-between items-center">
-            <span id="pQNum" class="text-xs font-mono font-bold text-slate-400">Q1</span>
-            <span id="pStatusBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">待機中</span>
-          </div>
-          
-          <div id="pQText" class="text-sm font-semibold text-slate-100 min-h-[36px] flex items-center leading-snug">
-            出題待機中
-          </div>
-          
-          <div id="pAnswerBox" class="hidden space-y-1.5 pt-1 border-t border-slate-800/60">
-            <div class="bg-blue-950/40 border border-blue-800/40 p-2 rounded-lg">
-              <span class="text-[9px] font-bold text-blue-400 block uppercase mb-0.5">正解</span>
-              <span id="pAText" class="text-sm font-bold text-white">--</span>
-            </div>
-            <div id="pCommentBox" class="hidden bg-slate-950 p-2 rounded-lg border border-slate-800">
-              <span id="pCText" class="text-[11px] text-slate-300 leading-tight">--</span>
-            </div>
-          </div>
-        </div>
-
-        <div id="btnScoreBox" class="space-y-1.5 opacity-25 pointer-events-none transition-opacity">
+        <div id="btnScoreBox" class="shrink-0 pt-2 space-y-1.5 opacity-25 pointer-events-none transition-opacity">
           <div class="grid grid-cols-2 gap-1.5">
-            <button id="btn-fast_win" onclick="submitAction('fast_win')" class="score-action-btn bg-sky-950/80 active:bg-sky-900 border border-sky-800/40 text-white p-2 rounded-lg flex items-center justify-between">
+            <button id="btn-fast_win" onclick="submitAction('fast_win')" class="score-action-btn bg-sky-950/80 active:bg-sky-900 border border-sky-800/40 text-white p-2 rounded-lg flex items-center justify-between transition">
               <span class="text-xs font-medium text-sky-200">早押し正解</span>
               <span id="badge_fast_win" class="text-xs font-mono font-bold text-sky-400">+3</span>
             </button>
-            <button id="btn-fast_lose" onclick="submitAction('fast_lose')" class="score-action-btn bg-rose-950/80 active:bg-rose-900 border border-rose-800/40 text-white p-2 rounded-lg flex items-center justify-between">
+            <button id="btn-fast_lose" onclick="submitAction('fast_lose')" class="score-action-btn bg-rose-950/80 active:bg-rose-900 border border-rose-800/40 text-white p-2 rounded-lg flex items-center justify-between transition">
               <span class="text-xs font-medium text-rose-200">早押し誤答</span>
               <span id="badge_fast_lose" class="text-xs font-mono font-bold text-rose-400">-3</span>
             </button>
           </div>
 
           <div class="grid grid-cols-2 gap-1.5">
-            <button id="btn-stand_win" onclick="submitAction('stand_win')" class="score-action-btn bg-indigo-950/80 active:bg-indigo-900 border border-indigo-800/40 text-white p-2 rounded-lg flex items-center justify-between">
+            <button id="btn-stand_win" onclick="submitAction('stand_win')" class="score-action-btn bg-indigo-950/80 active:bg-indigo-900 border border-indigo-800/40 text-white p-2 rounded-lg flex items-center justify-between transition">
               <span class="text-xs font-medium text-indigo-200">起立正解</span>
               <span id="badge_stand_win" class="text-xs font-mono font-bold text-indigo-400">+2</span>
             </button>
-            <button id="btn-stand_lose" onclick="submitAction('stand_lose')" class="score-action-btn bg-rose-950/40 active:bg-rose-900/60 border border-rose-900/30 text-white p-2 rounded-lg flex items-center justify-between">
+            <button id="btn-stand_lose" onclick="submitAction('stand_lose')" class="score-action-btn bg-rose-950/40 active:bg-rose-900/60 border border-rose-900/30 text-white p-2 rounded-lg flex items-center justify-between transition">
               <span class="text-xs font-medium text-rose-300">起立誤答</span>
               <span id="badge_stand_lose" class="text-xs font-mono font-bold text-rose-400">-2</span>
             </button>
           </div>
 
           <div class="grid grid-cols-2 gap-1.5 pt-0.5">
-            <button id="btn-norm_win" onclick="submitAction('norm_win')" class="score-action-btn bg-blue-600 active:bg-blue-700 text-white py-5 px-3 rounded-xl flex flex-col items-center justify-center shadow">
+            <button id="btn-norm_win" onclick="submitAction('norm_win')" class="score-action-btn bg-blue-600 active:bg-blue-700 text-white py-4 px-3 rounded-xl flex flex-col items-center justify-center shadow transition">
               <span class="text-sm font-bold">通常正解</span>
               <span id="badge_norm_win" class="text-xs font-mono font-bold text-blue-200 mt-0.5">+1</span>
             </button>
-            <button id="btn-norm_lose" onclick="submitAction('norm_lose')" class="score-action-btn bg-slate-800 active:bg-slate-700 border border-slate-700 text-white py-5 px-3 rounded-xl flex flex-col items-center justify-center">
+            <button id="btn-norm_lose" onclick="submitAction('norm_lose')" class="score-action-btn bg-slate-800 active:bg-slate-700 border border-slate-700 text-white py-4 px-3 rounded-xl flex flex-col items-center justify-center transition">
               <span class="text-sm font-bold text-slate-200">通常誤答</span>
               <span id="badge_norm_lose" class="text-xs font-mono font-bold text-slate-400 mt-0.5">±0</span>
             </button>
@@ -955,15 +1031,18 @@
         </div>
       </div>
 
-      <div id="scoreboardView" class="hidden space-y-2">
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-          <div class="text-xs font-bold text-slate-300 mb-2 px-1">ランキング</div>
-          <div id="scoreboardList" class="space-y-1"></div>
+      <!-- 2. 順位表画面 -->
+      <div id="scoreboardView" class="hidden h-full flex flex-col overflow-hidden pb-10">
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex-1 flex flex-col overflow-hidden">
+          <div class="text-xs font-bold text-slate-300 mb-2 px-1 shrink-0">ランキング</div>
+          <div id="scoreboardList" class="space-y-1 overflow-y-auto flex-1 pr-0.5"></div>
         </div>
       </div>
 
-      <div id="hostView" class="hidden space-y-2.5">
+      <!-- 3. 出題者画面 -->
+      <div id="hostView" class="hidden h-full overflow-y-auto space-y-2.5 pr-0.5">
 
+        <!-- 問読みカード -->
         <div class="bg-slate-900 border border-blue-500/40 p-3.5 rounded-2xl shadow-xl space-y-2.5">
           <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
             <div class="flex items-center space-x-2">
@@ -992,6 +1071,7 @@
           </div>
         </div>
 
+        <!-- クイック進行ボタン ＆ 採点進捗 -->
         <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
           <div class="flex justify-between items-center text-[10px]">
             <span class="text-slate-400 font-mono">Room: <b id="hostRoomIdDisplay" class="text-white">----</b></span>
@@ -1012,6 +1092,7 @@
           </div>
         </div>
 
+        <!-- テスト用ダミープレイヤー -->
         <details class="bg-slate-900/90 border border-amber-500/30 p-2.5 rounded-xl text-xs">
           <summary class="text-amber-400 font-bold cursor-pointer text-[11px]">テスト用ダミープレイヤー</summary>
           <div class="pt-2 space-y-2 text-[11px]">
@@ -1037,6 +1118,7 @@
 
     </main>
 
+    <!-- 順位表画面用：自分の順位・得点固定バー -->
     <div id="stickyMyBar" class="hidden fixed bottom-0 left-0 right-0 max-w-sm mx-auto bg-slate-900/95 border-t border-blue-500/50 backdrop-blur px-4 py-2 flex justify-between items-center z-50">
       <div class="flex items-center space-x-2">
         <span id="stickyMyRank" class="text-sm font-black text-amber-400 font-mono">--位</span>
@@ -1046,6 +1128,7 @@
     </div>
   </div>
 
+  <!-- 出題者用 独立設定モーダル -->
   <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 backdrop-blur-sm">
     <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl flex flex-col max-h-[85vh] overflow-hidden shadow-2xl">
       <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950">
@@ -1053,17 +1136,19 @@
         <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-base">&times;</button>
       </div>
 
+      <!-- 3タブ切り替え -->
       <div class="flex border-b border-slate-800 text-xs bg-slate-950/60 font-bold">
         <button id="tabBtnPointSettings" onclick="switchSettingsTab('points')" class="flex-1 py-2 text-center border-b-2 border-blue-500 text-blue-400 transition">得点設定</button>
         <button id="tabBtnQuestionSettings" onclick="switchSettingsTab('questions')" class="flex-1 py-2 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">問題設定</button>
+        <button id="tabBtnPlayerSettings" onclick="switchSettingsTab('players')" class="flex-1 py-2 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">参加者管理</button>
       </div>
 
       <div class="p-3 overflow-y-auto flex-1 space-y-3 text-xs">
         
+        <!-- 1. 得点設定タブ -->
         <div id="settingsTabContentPoints" class="space-y-3">
-          
           <div class="space-y-2">
-            <span class="text-[11px] font-bold text-blue-400 block border-b border-slate-800 pb-1">正解グループ（ステッパー式）</span>
+            <span class="text-[11px] font-bold text-blue-400 block border-b border-slate-800 pb-1">正解グループ</span>
             <div class="space-y-1.5 text-slate-300">
               <div class="flex justify-between items-center">
                 <span>通常正解:</span>
@@ -1160,6 +1245,7 @@
           </div>
         </div>
 
+        <!-- 2. 問題設定タブ -->
         <div id="settingsTabContentQuestions" class="hidden space-y-3">
           <div class="space-y-1">
             <span class="text-[11px] font-bold text-slate-300 block">企画名・ラウンド名</span>
@@ -1202,6 +1288,12 @@
             <span class="text-[11px] font-bold text-slate-300 block">全問リスト一覧</span>
             <div id="managerListItems" class="max-h-36 overflow-y-auto space-y-1 p-1 bg-slate-950 rounded-lg border border-slate-800"></div>
           </div>
+        </div>
+
+        <!-- 3. 参加者管理タブ（個別得点修正） -->
+        <div id="settingsTabContentPlayers" class="hidden space-y-2">
+          <span class="text-[11px] font-bold text-slate-300 block border-b border-slate-800 pb-1">参加者スコア直接編集</span>
+          <div id="playerManagerList" class="max-h-60 overflow-y-auto space-y-1.5 pr-0.5"></div>
         </div>
 
       </div>
