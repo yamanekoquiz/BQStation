@@ -1,1308 +1,560 @@
 <!DOCTYPE html>
-<html lang="ja" class="dark">
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Board Quiz Master</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              500: '#3b82f6',
-              600: '#2563eb',
-            }
-          }
-        }
-      }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Quiz Board Live</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04050d;--ln:#1c2b5a;--cy:#25e8ff;--mg:#ff3df0;--yl:#ffe14d;--tx:#e8f3ff;--mu:#7c8bb8}
+html{background:var(--bg)}
+body{font-family:'Chakra Petch','Noto Sans JP',system-ui,sans-serif;color:var(--tx);min-height:100vh;
+background:radial-gradient(900px 500px at 90% -10%,#3a0f6a66,transparent),radial-gradient(700px 500px at -10% 100%,#06405a66,transparent),var(--bg)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:70;background:linear-gradient(#25e8ff0b 1px,transparent 1px) 0 0/100% 4px}
+.num,.hd{font-family:Orbitron,sans-serif;letter-spacing:.04em}
+.hd{color:var(--cy);text-shadow:0 0 14px #25e8ff88,2px 0 var(--mg)}
+.mu{color:var(--mu)}
+.pn{background:#0a0f22e8;border:1px solid var(--ln);border-left:3px solid var(--cy);padding:12px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%)}
+.pn.mg{border-left-color:var(--mg)}
+.inp{width:100%;background:#050813;border:1px solid var(--ln);color:var(--tx);padding:8px 10px;font-size:14px}
+.inp:focus,:focus-visible{outline:none;border-color:var(--cy);box-shadow:0 0 0 1px var(--cy),0 0 12px #25e8ff55}
+.btn{background:#0d1a3a;border:1px solid var(--cy);color:var(--cy);padding:10px 12px;font-weight:700;cursor:pointer;transition:.15s;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+.btn:active,.btn.sel{background:var(--cy);color:#001018}
+.btn.mg,.act.lose{border-color:var(--mg);color:var(--mg)}
+.btn.mg:active,.act.lose.sel{background:var(--mg);color:#14001a}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:disabled{opacity:.35;border-color:var(--ln);color:var(--mu);cursor:not-allowed}
+.act{display:flex;justify-content:space-between;align-items:center;padding:13px 12px;font-size:14px}
+.act.big{flex-direction:column;gap:2px;padding:24px 8px;font-size:17px}
+.off{opacity:.3;pointer-events:none;transition:opacity .2s}
+.tab{padding:4px 10px;color:var(--mu);font-size:12px;font-weight:700}.tab.on{background:var(--cy);color:#001018}
+.bar{height:6px;background:#050813;border:1px solid var(--ln)}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cy),var(--mg));transition:width .3s}
+.rk{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-bottom:1px solid #16224a}
+.rk.me{background:#0c2a4a;border:1px solid var(--cy)}
+.tag{font-size:9px;padding:1px 4px;border:1px solid currentColor;margin-left:4px}
+.glitch{animation:gl .35s steps(2) 1}
+@keyframes gl{0%{transform:translateX(-4px);text-shadow:2px 0 var(--mg),-2px 0 var(--cy)}50%{transform:translateX(4px)}100%{transform:none}}
+@keyframes bonusPop{0%{transform:scale(.8) translateY(20px);opacity:0}15%{transform:scale(1.05);opacity:1}25%,85%{transform:scale(1);opacity:1}100%{transform:scale(.9) translateY(-20px);opacity:0}}
+.animate-bonus{animation:bonusPop 3.2s cubic-bezier(.16,1,.3,1) forwards}
+@media (prefers-reduced-motion:reduce){.glitch,.animate-bonus{animation:none}}
+</style>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import {getDatabase,ref,set,update,onValue,push,get,increment} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+const db=getDatabase(initializeApp({
+  apiKey:"AIzaSyDUU7lozGy9hWNajQdXelMNRW-swZDZQL0",authDomain:"ymnk-summer.firebaseapp.com",
+  databaseURL:"https://ymnk-summer-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"ymnk-summer",
+  storageBucket:"ymnk-summer.firebasestorage.app",messagingSenderId:"459197894294",appId:"1:459197894294:web:6ecd892c5359680425fcb7",measurementId:"G-ZWHMCXMQ6H"}));
+
+const W=window,$=id=>document.getElementById(id),LS=localStorage;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=v=>v>0?'+'+v:v===0?'±0':''+v;
+const hash=async s=>{if(!s||!crypto.subtle)return s;return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('')};
+const DEF={fast_win:3,stand_win:2,norm_win:1,fast_lose:-3,stand_lose:-2,norm_lose:0,enable_bonus:true,solo_bonus:2,few_bonus:1,few_threshold:3};
+const LBL={fast_win:'早押し正解',fast_lose:'早押し誤答',stand_win:'起立正解',stand_lose:'起立誤答',norm_win:'通常正解',norm_lose:'通常誤答'};
+const WINS=['fast_win','stand_win','norm_win'];
+const GROUPS=[['正解',[['norm_win','通常正解'],['fast_win','早押し正解'],['stand_win','起立正解']]],['誤答',[['norm_lose','通常誤答'],['fast_lose','早押し誤答'],['stand_lose','起立誤答']]],['ボーナス',[['solo_bonus','単独正解ボーナス'],['few_bonus','少数正解ボーナス'],['few_threshold','少数正解の人数(以下)']]]];
+
+let roomId=LS.quiz_room_id||null,pid=LS.quiz_player_id||null,isHost=LS.quiz_is_host==='true',mode=LS.quiz_mode||'quiz',myOrder=+LS.quiz_order||0,newMode='quiz';
+const R=()=>`${mode==='mochi'?'motiyori_rooms':'rooms'}/${roomId}`;
+let questions=JSON.parse(LS.quiz_questions||'[]'),players={},state=null,cfg={...DEF},botT=[],lastBonusQ=0,hostInit=false,firstP=true;
+
+/* ---------- 入室 ---------- */
+W.addEventListener('DOMContentLoaded',()=>{
+  $('btnScoreBox').innerHTML=['fast','stand','norm'].map(t=>['win','lose'].map(r=>{const k=t+'_'+r;
+    return `<button id="b_${k}" onclick="submitAction('${k}')" class="btn act ${r} ${t==='norm'?'big':''}"><span>${LBL[k]}</span><b id="bd_${k}" class="num"></b></button>`}).join('')).join('');
+  const u=new URLSearchParams(location.search).get('room');if(u)$('joinRoomId').value=u;
+  if(LS.quiz_host_last)$('resumeBtn').classList.remove('hidden');
+  if(roomId&&(isHost||(mode==='mochi'?myOrder:pid)))enter();
+});
+W.pickMode=m=>{newMode=m;$('mdQuiz').classList.toggle('sel',m==='quiz');$('mdMochi').classList.toggle('sel',m==='mochi');$('createSize').classList.toggle('hidden',m!=='mochi')};
+W.createRoom=async()=>{
+  try{
+    let id,ex;
+    do{id=String(1000+Math.floor(Math.random()*9000));ex=false;
+      try{ex=(await get(ref(db,`rooms/${id}`))).exists()||(await get(ref(db,`motiyori_rooms/${id}`))).exists()}catch(e){console.warn(e)}}while(ex);
+    let pass=$('createRoomPass').value.trim();try{pass=await hash(pass)}catch(e){}
+    const mo=newMode==='mochi',title=$('createEventTitle').value.trim()||(mo?'持ち寄りボード':'ボードクイズ企画');
+    if(mo){
+      const n=Math.min(99,Math.max(2,+$('createSize').value||34)),pl={};
+      for(let i=1;i<=n;i++)pl['p_'+i]={name:'No.'+i,order:i,totalPlus:0,totalMinus:0,score:0,currentPlus:0,currentMinus:0};
+      await set(ref(db,`motiyori_rooms/${id}`),{pass:pass||'',title,createdAt:Date.now(),gameState:{currentSet:1,status:'standby'},players:pl});
+    }else await set(ref(db,`rooms/${id}`),{pass:pass||'',title,createdAt:Date.now(),gameState:{status:'standby',qNum:1,qText:'',aText:'',cText:'',pointConfig:{...DEF}}});
+    mode=newMode;roomId=id;isHost=true;LS.quiz_mode=mode;LS.quiz_host_mode=mode;LS.quiz_room_id=id;LS.quiz_is_host='true';LS.quiz_host_last=id;enter();
+  }catch(e){console.error(e);alert('ルームを作成できませんでした\n'+(e.code||'')+' '+(e.message||e))}
+};
+W.resumeHost=()=>{roomId=LS.quiz_host_last;mode=LS.quiz_host_mode||'quiz';isHost=true;LS.quiz_mode=mode;LS.quiz_room_id=roomId;LS.quiz_is_host='true';enter()};
+W.joinRoom=async()=>{
+  const id=$('joinRoomId').value.trim(),name=$('joinPlayerName').value.trim();
+  if(id.length!==4)return alert('4桁のルーム番号を入力してください');
+  if(!name)return alert('お名前を入力してください');
+  let md='quiz',snap=await get(ref(db,`rooms/${id}`));
+  if(!snap.exists()){md='mochi';snap=await get(ref(db,`motiyori_rooms/${id}`))}
+  if(!snap.exists())return alert('指定されたルーム番号が存在しません');
+  const v=snap.val();if(v.pass&&v.pass!==await hash($('joinRoomPass').value.trim()))return alert('ルームパスワードが一致しません');
+  if(md==='mochi'){
+    const o=parseInt($('joinOrderNum').value),n=Object.keys(v.players||{}).length;
+    if(!o||o<1||o>n)return alert(`持ち寄りボードです。出題順の番号（1〜${n}）を入力してください`);
+    const cur=v.players?.['p_'+o];
+    if(cur?.name&&cur.name!==`No.${o}`&&cur.name!==name&&!confirm(`#${o} は「${cur.name}」さんとして登録されています。「${name}」として入りますか？`))return;
+    await update(ref(db,`motiyori_rooms/${id}/players/p_${o}`),{name,order:o});myOrder=o;LS.quiz_order=o;
+  }else{
+    if(!pid){pid=push(ref(db,`rooms/${id}/players`)).key;LS.quiz_player_id=pid}
+    const ex=(await get(ref(db,`rooms/${id}/players/${pid}`))).exists();
+    await (ex?update:set)(ref(db,`rooms/${id}/players/${pid}`),ex?{name}:{name,score:0});
+  }
+  mode=md;roomId=id;isHost=false;LS.quiz_mode=md;LS.quiz_room_id=id;LS.quiz_is_host='false';enter();
+};
+W.leaveRoom=()=>{
+  if(!confirm(isHost?'ルームから退出しますか？（ログイン画面から再開できます）':'ルームから退出しますか？（同じ端末・同じ番号で再入室すれば得点は残ります）'))return;
+  ['quiz_room_id','quiz_is_host','quiz_order'].forEach(k=>LS.removeItem(k));location.reload();
+};
+function enter(){
+  const mo=mode==='mochi';
+  $('authView').classList.add('hidden');$('mainAppView').classList.remove('hidden');
+  $('badge').textContent=`ROOM ${roomId}`+(isHost?' / HOST':'')+(mo?' / 持ち寄り':'');
+  $('btnSet').classList.toggle('hidden',!isHost);
+  $('tabsQuiz').style.display=mo?'none':'flex';$('tabsMochi').style.display=mo?'flex':'none';
+  $('mochiView').classList.toggle('hidden',!mo);
+  ['tab-s-points','tab-s-questions'].forEach(i=>$(i).classList.toggle('hidden',mo));$('tab-s-roster').classList.toggle('hidden',!mo);
+  if(mo){['playerView','scoreboardView','hostView'].forEach(i=>$(i).classList.add('hidden'));W.switchSettingsTab('roster');W.setMTab('play')}
+  else{$('tab-host').classList.toggle('hidden',!isHost);$('hostRoom').textContent=roomId;drawSteppers();W.switchSettingsTab('points');W.setTab(isHost?'host':'player')}
+  bind();
+}
+W.setTab=t=>{
+  ['player','scoreboard','host'].forEach(n=>{$('tab-'+n).classList.toggle('on',n===t);$(n==='player'?'playerView':n==='scoreboard'?'scoreboardView':'hostView').classList.toggle('hidden',n!==t)});
+  $('stickyMyBar').classList.toggle('hidden',t!=='scoreboard'||isHost);
+};
+
+/* ---------- Firebase 購読 ---------- */
+function bind(){
+  onValue(ref(db,`${R()}/title`),s=>{const t=s.val()||'ボードクイズ企画';$('displayEventTitle').textContent=t;$('settingsEventTitle').value=t;$('mTitle').value=t});
+  if(mode==='mochi')return bindMochi();
+  onValue(ref(db,`${R()}/gameState`),s=>{
+    const st=s.val();if(!st)return;const prev=state;state=st;
+    if(isHost&&!hostInit){ /* ホストのリロード時に設定と問題番号を復元 */
+      hostInit=true;cfg={...DEF,...st.pointConfig};drawSteppers();
+      const n=st.status==='closed'?st.qNum+1:st.qNum;$('hostQNum').value=n;loadQ(n-1);
     }
-  </script>
-  <style>
-    @keyframes bonusPop {
-      0% { transform: scale(0.8) translateY(20px); opacity: 0; }
-      15% { transform: scale(1.05) translateY(0); opacity: 1; }
-      25% { transform: scale(1); opacity: 1; }
-      85% { transform: scale(1) translateY(0); opacity: 1; }
-      100% { transform: scale(0.9) translateY(-20px); opacity: 0; }
+    drawPlayer();progress();hl();
+    if(prev&&prev.status!=='answer'&&st.status==='answer'){const e=$('pQText');e.classList.remove('glitch');void e.offsetWidth;e.classList.add('glitch')}
+    if(isHost){drawHostBtns();botSim()}
+  });
+  onValue(ref(db,`${R()}/players`),s=>{
+    players=s.val()||{};
+    const L=Object.entries(players).map(([id,d])=>({id,...d,score:d.score||0})).sort((a,b)=>b.score-a.score);
+    L.forEach((p,i)=>p.rank=i&&p.score===L[i-1].score?L[i-1].rank:i+1);
+    L.forEach(p=>p.tie=L.filter(x=>x.rank===p.rank).length>1);
+    const me=L.find(p=>p.id===pid);
+    if(me&&!isHost){
+      $('myCurrentScore').textContent=`${me.score} pts`;$('stickyMyRank').textContent=(me.tie?'T':'')+me.rank+'位';$('stickyMyScore').textContent=`${me.score} pts`;
+      const q=state?.qNum||1,h=me.history?.['q'+q];
+      if(h?.bonus&&lastBonusQ!==q){lastBonusQ=q;if(!firstP)banner(h.bonus,`+${h.bonusPts||''}pt`)}
     }
-    .animate-bonus {
-      animation: bonusPop 3.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-  </style>
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, update, onValue, push, get, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    firstP=false;
+    $('scoreboardList').innerHTML=L.map(p=>`<div class="rk ${p.id===pid&&!isHost?'me':''}"><div class="flex items-center gap-3">
+      <span class="num text-xs w-8 text-center font-bold" style="color:${p.rank===1?'var(--yl)':p.rank===2?'#cfe0ff':p.rank===3?'#ff9a4d':'var(--mu)'}">${p.tie?'T':''}${p.rank}</span>
+      <span class="text-sm font-bold">${esc(p.name)}${p.id===pid&&!isHost?'<span class="tag" style="color:var(--cy)">YOU</span>':''}${p.isBot?'<span class="tag mu">BOT</span>':''}</span></div>
+      <span class="num text-sm font-bold" style="color:${p.score>0?'var(--cy)':p.score<0?'var(--mg)':'var(--mu)'}">${p.score}</span></div>`).join('');
+    progress();hl();
+  });
+}
+function progress(){
+  if(!state)return;const k='q'+(state.qNum||1),n=Object.keys(players).length;
+  const d=Object.values(players).filter(p=>p.history?.[k]?.action).length,pc=n?Math.round(d/n*100):0;
+  $('hostSubmissionText').textContent=`採点済 ${d} / ${n}人 (${pc}%)`;$('hostProgressBar').style.width=pc+'%';
+  $('playerSubmissionText').textContent=`${d} / ${n}人`;$('playerProgressBar').style.width=pc+'%';
+}
+function hl(){ /* 今の問題で自分が選んだボタンだけを光らせる（前問の選択は残さない） */
+  const a=state&&players[pid]?.history?.['q'+state.qNum]?.action;
+  document.querySelectorAll('.act').forEach(b=>b.classList.toggle('sel',b.id==='b_'+a));
+}
+function drawPlayer(){
+  const s=state,c={...DEF,...s.pointConfig};for(const k in LBL)$('bd_'+k).textContent=fmt(c[k]);
+  const sb=s.status==='standby',on=s.status==='answer';
+  $('pQNum').textContent='Q'+s.qNum;$('pQText').textContent=sb?'出題待機中…':(s.qText||'問題なし');
+  $('pAnsBox').classList.toggle('hidden',sb);$('pAText').textContent=s.aText||'解答なし';
+  $('pCommentBox').classList.toggle('hidden',!(s.cText||'').trim());$('pCText').textContent=s.cText||'';
+  $('btnScoreBox').classList.toggle('off',!on);
+  const b=$('pStatusBadge');b.textContent=sb?'待機中':on?'採点中':'締切済み（前問表示中）';b.style.color=on?'var(--cy)':'var(--mu)';
+}
+W.submitAction=k=>{
+  if(isHost||!pid||!state||state.status!=='answer')return;
+  const q='q'+(state.qNum||1),pts={...DEF,...state.pointConfig}[k];
+  const h={...(players[pid]?.history||{}),[q]:{action:k,pts}};
+  update(ref(db),{[`${R()}/players/${pid}/history/${q}`]:{action:k,pts},
+    [`${R()}/players/${pid}/score`]:Object.values(h).reduce((s,v)=>s+(v.pts||0),0)});
+  document.querySelectorAll('.act').forEach(b=>b.classList.toggle('sel',b.id==='b_'+k));
+};
+function banner(t,d){
+  const b=$('bonusBanner');$('bonusTitle').textContent=t;$('bonusDetail').textContent=d;
+  b.classList.remove('hidden','animate-bonus');void b.offsetWidth;b.classList.add('animate-bonus');setTimeout(()=>b.classList.add('hidden'),3200);
+}
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUU7lozGy9hWNajQdXelMNRW-swZDZQL0",
-      authDomain: "ymnk-summer.firebaseapp.com",
-      databaseURL: "https://ymnk-summer-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "ymnk-summer",
-      storageBucket: "ymnk-summer.firebasestorage.app",
-      messagingSenderId: "459197894294",
-      appId: "1:459197894294:web:6ecd892c5359680425fcb7",
-      measurementId: "G-ZWHMCXMQ6H"
-    };
+/* ---------- 出題者 ---------- */
+function refreshReader(){
+  $('readerQNum').textContent='Q'+($('hostQNum').value||1);
+  $('readerQText').textContent=$('hostQText').value||'（問題文が未設定です）';
+  $('readerAText').textContent=$('hostAText').value||'（解答未設定）';
+  $('readerCText').textContent=$('hostCText').value;$('readerCBox').classList.toggle('hidden',!$('hostCText').value);
+}
+W.refreshReader=refreshReader;
+function loadQ(i){
+  const it=questions[i];$('hostQText').value=it?.q||'';$('hostAText').value=it?.a||'';$('hostCText').value=it?.c||'';
+  if(!it&&state?.status==='answer'&&state.qNum===i+1){$('hostQText').value=state.qText;$('hostAText').value=state.aText;$('hostCText').value=state.cText||''}
+  refreshReader();
+}
+W.loadQ=i=>loadQ(+i-1);
+const stepQ=d=>{const v=Math.max(1,(+$('hostQNum').value||1)+d);$('hostQNum').value=v;loadQ(v-1)};
+W.hostPrevQuestion=()=>stepQ(-1);W.hostNextQuestionManual=()=>stepQ(1);
+W.hostActionOpenCurrent=()=>set(ref(db,`${R()}/gameState`),{qNum:+$('hostQNum').value||1,qText:$('hostQText').value,aText:$('hostAText').value,cText:$('hostCText').value,pointConfig:cfg,status:'answer'});
+W.hostActionCloseAndNext=async()=>{
+  await bonuses(state.qNum); /* 表示中の問題番号で計算（フォームの番号ではない） */
+  await update(ref(db,`${R()}/gameState`),{status:'closed'});
+  stepQ(1);
+};
+function drawHostBtns(){
+  const a=state.status==='answer';$('btnQuickOpen').disabled=a;$('btnQuickCloseNext').disabled=!a;
+  $('btnQuickOpen').className='btn w-full py-3 text-sm '+(a?'':'sel');$('btnQuickCloseNext').className='btn mg w-full py-3 text-sm '+(a?'sel':'');
+}
+async function bonuses(q){
+  if(!cfg.enable_bonus)return;
+  const k='q'+q,ps=(await get(ref(db,`${R()}/players`))).val()||{};
+  const win=Object.values(ps).filter(p=>WINS.includes(p.history?.[k]?.action)),n=win.length;
+  let b=0,t='';
+  if(n===1&&cfg.solo_bonus>0){b=cfg.solo_bonus;t='単独正解 BONUS'}
+  else if(n&&n<=cfg.few_threshold&&cfg.few_bonus>0){b=cfg.few_bonus;t=`少数正解 BONUS (${n}人)`}
+  const u={},names=[];
+  Object.entries(ps).forEach(([id,p])=>{ /* 何度締めても二重加算しないよう、基礎点を引いてから再計算 */
+    const h=p.history||{},e=h[k];if(!e||e.action==='void')return;
+    const isW=b>0&&WINS.includes(e.action),pts=(e.pts||0)-(e.bonusPts||0)+(isW?b:0),base=`${R()}/players/${id}/`;
+    if(isW)names.push(p.name);
+    u[base+`history/${k}/pts`]=pts;u[base+`history/${k}/bonus`]=isW?t:null;u[base+`history/${k}/bonusPts`]=isW?b:null;
+    u[base+'score']=Object.entries(h).reduce((s,[kk,v])=>s+(kk===k?pts:v.pts||0),0);
+  });
+  if(Object.keys(u).length)await update(ref(db),u);
+  if(b)banner(t,`+${b}pt (${names.join(', ')})`);
+}
+W.hostVoidCurrentQuestion=async()=>{
+  const q=+$('hostQNum').value||1;if(!confirm(`第 ${q} 問を無効（全員0点）にしますか？`))return;
+  const ps=(await get(ref(db,`${R()}/players`))).val()||{},u={};
+  Object.entries(ps).forEach(([id,p])=>{const h=p.history||{};
+    if(h['q'+q]){u[`${R()}/players/${id}/history/q${q}`]={action:'void',pts:0}}
+    u[`${R()}/players/${id}/score`]=Object.entries(h).reduce((s,[k,v])=>s+(k==='q'+q?0:v.pts||0),0)});
+  await update(ref(db),u);alert(`第 ${q} 問を無効化しました`);
+};
+W.hostResetScores=async()=>{
+  if(!confirm('全員の得点をリセットしますか？'))return;const u={};
+  Object.keys(players).forEach(id=>{u[`${R()}/players/${id}/score`]=0;u[`${R()}/players/${id}/history`]=null});
+  await update(ref(db),u);
+};
+W.saveEventTitle=async()=>{await set(ref(db,`${R()}/title`),(mode==='mochi'?$('mTitle'):$('settingsEventTitle')).value.trim()||'ボードクイズ企画');alert('企画名を更新しました')};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+/* ---------- 得点設定 ---------- */
+function drawSteppers(){
+  $('stepWrap').innerHTML=GROUPS.map(([g,rows],i)=>`<div class="space-y-2 ${i?'pt-2 border-t border-[#1c2b5a]':''}">
+    <div class="flex justify-between items-center"><b class="hd text-xs">${g}</b>${i===2?`<label class="text-xs mu flex items-center gap-1"><input type="checkbox" ${cfg.enable_bonus?'checked':''} onchange="toggleBonus(this.checked)">有効</label>`:''}</div>
+    <div id="${i===2?'bonusBox':'g'+i}" class="space-y-2 ${i===2&&!cfg.enable_bonus?'opacity-40':''}">${rows.map(([k,l])=>`<div class="flex justify-between items-center text-sm"><span>${l}</span>
+    <div class="flex items-center gap-1"><button class="btn sm" onclick="stepValue('${k}',-1)">−</button><b id="v_${k}" class="num w-9 text-center">${cfg[k]}</b><button class="btn sm" onclick="stepValue('${k}',1)">＋</button></div></div>`).join('')}</div></div>`).join('');
+}
+const sync=()=>roomId&&update(ref(db,`${R()}/gameState`),{pointConfig:cfg});
+W.stepValue=(k,d)=>{cfg[k]=(cfg[k]||0)+d;if(/bonus|threshold/.test(k))cfg[k]=Math.max(0,cfg[k]);$('v_'+k).textContent=cfg[k];sync()};
+W.toggleBonus=on=>{cfg.enable_bonus=on;$('bonusBox').classList.toggle('opacity-40',!on);sync()};
 
-    let currentRoomId = localStorage.getItem("quiz_room_id") || null;
-    let myPlayerId = localStorage.getItem("quiz_player_id") || null;
-    let myPlayerName = localStorage.getItem("quiz_player_name") || "";
-    let isHost = localStorage.getItem("quiz_is_host") === "true";
-    let importedQuestions = [];
-    let gameStateUnsub = null;
-    let playersUnsub = null;
-    let cachedPlayers = {};
-    let botTimeouts = [];
-    let lastNotifiedBonusQ = 0;
-    let currentObservedQNum = null;
+/* ---------- CSV ---------- */
+function parseRows(t){ /* 引用符・カンマ入りの問題文に対応 */
+  const r=[];let row=[],c='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch==='"')q=true;else if(ch===','){row.push(c);c=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;row.push(c);c='';r.push(row);row=[]}else c+=ch}
+  row.push(c);r.push(row);return r.map(x=>x.map(s=>s.trim())).filter(x=>x.some(Boolean));
+}
+W.handleCSVUpload=e=>{
+  const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{let t;
+    try{t=new TextDecoder('utf-8',{fatal:true}).decode(rd.result)}catch{t=new TextDecoder('shift_jis').decode(rd.result)} /* Excel保存のShift_JIS対応 */
+    const rows=parseRows(t.replace(/^\uFEFF/,''));
+    if(rows[0]?.some(c=>/^(正解|答え?|解答|answer)$/i.test(c)))rows.shift();
+    questions=rows.filter(c=>c.length>=2).map(c=>/^\d+$/.test(c[0])&&c.length>=3?{q:c[1],a:c[2],c:c[3]||''}:{q:c[0],a:c[1],c:c[2]||''});
+    if(!questions.length)return alert('CSVの形式を認識できませんでした');
+    LS.quiz_questions=JSON.stringify(questions);alert(`${questions.length} 問読み込みました`);drawList();W.hostSelectQuestionByIndex(0);
+  };
+  rd.readAsArrayBuffer(f);e.target.value='';
+};
+function drawList(){
+  $('managerListItems').innerHTML=questions.length?questions.map((it,i)=>`<div class="flex justify-between gap-2 p-2 border border-[#1c2b5a] bg-[#0a0f22]">
+    <div class="text-xs flex-1"><b>Q${i+1}. ${esc(it.q)}</b><div style="color:var(--cy)">答: ${esc(it.a)}</div>${it.c?`<div class="mu">${esc(it.c)}</div>`:''}</div>
+    <button class="btn sm shrink-0" onclick="hostSelectQuestionByIndex(${i})">セット</button></div>`).join(''):'<p class="text-xs mu text-center py-3">CSV未読込</p>';
+}
+W.hostSelectQuestionByIndex=i=>{if(!questions[i])return;$('hostQNum').value=i+1;loadQ(i);W.closeSettingsModal()};
+W.openSettingsModal=()=>{$('settingsModal').classList.remove('hidden');drawList()};
+W.closeSettingsModal=()=>$('settingsModal').classList.add('hidden');
+W.switchSettingsTab=t=>{['points','questions','roster'].forEach(n=>{$('tab-s-'+n).classList.toggle('on',n===t);$('settingsTab-'+n).classList.toggle('hidden',n!==t)})};
 
-    window.addEventListener("DOMContentLoaded", () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlRoom = urlParams.get("room");
-      if (urlRoom) {
-        document.getElementById("joinRoomId").value = urlRoom;
-      }
-
-      if (currentRoomId) {
-        if (isHost) {
-          startHostMode(currentRoomId);
-        } else if (myPlayerId) {
-          startPlayerMode(currentRoomId);
-        }
-      }
+/* ---------- テスト用Bot ---------- */
+W.addMockPlayers=async n=>{
+  const c=Object.values(players).filter(p=>p.isBot).length,u={};
+  for(let i=1;i<=n;i++)u[`${R()}/players/bot_${Date.now()}_${c+i}`]={name:`Bot ${c+i}`,score:0,isBot:true};
+  await update(ref(db),u);
+};
+W.removeMockPlayers=async()=>{
+  if(!confirm('ダミープレイヤーをすべて削除しますか？'))return;const u={};
+  Object.entries(players).forEach(([id,p])=>{if(p.isBot)u[`${R()}/players/${id}`]=null});await update(ref(db),u);
+};
+function botSim(){
+  botT.forEach(clearTimeout);botT=[];
+  if(!$('chkAutoBotSubmit').checked||state.status!=='answer')return;
+  const k='q'+state.qNum,c={...DEF,...state.pointConfig},acts=['norm_win','norm_win','norm_lose','norm_lose','fast_win','stand_win','stand_lose'];
+  Object.entries(players).filter(([,p])=>p.isBot&&!p.history?.[k]?.action).forEach(([id,p])=>{
+    botT.push(setTimeout(()=>{const a=acts[Math.floor(Math.random()*acts.length)],h={...(p.history||{}),[k]:{action:a,pts:c[a]}};
+      update(ref(db,`${R()}/players/${id}`),{history:h,score:Object.values(h).reduce((s,v)=>s+(v.pts||0),0)})},400+Math.random()*1600));
+  });
+}
+/* ---------- 持ち寄りボード ---------- */
+let mS={},mP={},mM={},mH=[],mBusy=0,mTab='play';
+const mList=()=>Object.entries(mP).map(([id,p])=>({id,...p})).sort((a,b)=>a.order-b.order);
+const sc=p=>(p.currentPlus||0)-(p.currentMinus||0),sgn=v=>v>0?'+'+v:''+v,col=v=>v>0?'var(--cy)':v<0?'var(--mg)':'var(--mu)';
+W.setMTab=t=>{mTab=t;['play','total','matrix'].forEach(n=>{$('mt-'+n).classList.toggle('on',n===t);$({play:'mPlay',total:'mTotal',matrix:'mMatrix'}[n]).classList.toggle('hidden',n!==t)});if(t==='matrix')drawMatrix()};
+function bindMochi(){
+  onValue(ref(db,`${R()}/gameState`),s=>{const n=s.val()||{currentSet:1,status:'standby'};if(n.currentSet!==mS.currentSet)mH=[];mS=n;drawMochi()});
+  onValue(ref(db,`${R()}/players`),s=>{mP=s.val()||{};drawMochi();if(isHost&&document.activeElement!==$('rosterText'))$('rosterText').value=mList().map(p=>`${p.order},${p.name}`).join('\n');if(mTab==='matrix')drawMatrix()});
+  onValue(ref(db,`${R()}/matrix`),s=>{mM=s.val()||{};if(mTab==='matrix')drawMatrix()});
+}
+function drawMochi(){
+  const L=mList(),n=L.length,set=mS.currentSet||1,st=mS.status||'standby',pr=L[set-1],done=st==='done';
+  const isPres=p=>!done&&p.id===pr?.id,mine=p=>p.order===myOrder&&!isHost;
+  $('mSub').textContent=done?'全セット終了':`SET ${set} / ${n}　出題: ${pr?`${pr.name} (#${pr.order})`:'-'}`;
+  $('mBanner').classList.toggle('hidden',st==='standby'||done||!pr);$('mBanner').textContent=pr?`出題者: ${pr.name}`:'';
+  const row=(p,right)=>`<div class="rk ${mine(p)?'me':''}"><div class="flex items-center gap-2 min-w-0"><span class="num text-[10px] mu">#${p.order}</span><span class="text-sm font-bold truncate">${esc(p.name)}</span>${mine(p)?'<span class="tag" style="color:var(--cy)">YOU</span>':''}</div>${right}</div>`;
+  $('mSetList').innerHTML='<div class="pn !p-1">'+[...L].sort((a,b)=>isPres(a)-isPres(b)||sc(b)-sc(a)||(b.currentPlus||0)-(a.currentPlus||0))
+    .map(p=>row(p,isPres(p)?'<span class="tag" style="color:var(--yl)">出題</span>':`<b class="num text-base" style="color:${col(sc(p))}">${sgn(sc(p))}</b>`)).join('')+'</div>';
+  $('mTotList').innerHTML=[...L].sort((a,b)=>(b.score||0)-(a.score||0)||(b.totalPlus||0)-(a.totalPlus||0))
+    .map(p=>row(p,`<b class="num text-lg" style="color:${col(p.score||0)}">${p.score||0}<small class="mu text-xs"> pt</small></b>`)).join('');
+  const me=mP['p_'+myOrder],pres=me&&isPres(me);
+  $('mPanel').classList.toggle('hidden',isHost||!me);$('mPres').classList.toggle('hidden',!pres);$('mNorm').classList.toggle('hidden',!!pres);
+  if(me){$('mName').textContent=`${me.name} (#${me.order})`;$('mTot').textContent=`通算 ${me.score||0} pt`;$('mPlus').textContent=me.currentPlus||0;$('mMinus').textContent=me.currentMinus||0;$('mNet').textContent=sgn(sc(me))+' pt'}
+  $('mBtns').classList.toggle('off',st!=='in_set');
+  $('mLock').textContent=st==='standby'?'GMの開始合図をお待ちください':st==='confirm'?'出題終了：今セットの得点を確認してください':done?'全セット終了':'';
+  if(isHost){$('mGm').classList.remove('hidden');
+    $('mGmBtns').innerHTML=st==='standby'?`<button class="btn sel sm" onclick="mSt('in_set')">第${set}セット開始</button>`
+      :st==='in_set'?`<button class="btn mg sm" onclick="mSt('confirm')">出題終了（点数確認）</button>`
+      :st==='confirm'?`<button class="btn sm" onclick="mSt('in_set')">修正再開</button><button class="btn sel sm" onclick="mNext()">${set>=n?'得点確定して終了':'得点確定→次へ'}</button>`:''}
+}
+/* 連打しても取りこぼさないよう increment で加算 */
+W.mAdd=t=>{
+  if(isHost||!myOrder||mS.status!=='in_set'||mList()[(mS.currentSet||1)-1]?.order===myOrder)return;
+  const k=t==='plus'?'currentPlus':'currentMinus';mH.push(k);update(ref(db,`${R()}/players/p_${myOrder}`),{[k]:increment(1)});
+};
+W.mUndo=()=>{
+  if(mS.status!=='in_set'||!mH.length)return;const k=mH.pop();
+  if((mP['p_'+myOrder]?.[k]||0)>0)update(ref(db,`${R()}/players/p_${myOrder}`),{[k]:increment(-1)});
+};
+W.mSt=st=>update(ref(db,`${R()}/gameState`),{status:st});
+W.mNext=async()=>{
+  const set=mS.currentSet||1,L=mList(),n=L.length,pr=L[set-1];
+  if(mBusy===set)return;
+  if(!confirm(`第${set}セット（出題: ${pr?.name||'-'}）の得点を確定して${set>=n?'終了':'次へ進'}しますか？`))return;
+  mBusy=set;const u={},b=R();
+  try{
+    L.forEach(p=>{
+      const isP=p.id===pr?.id,pl=isP?0:p.currentPlus||0,mi=isP?0:p.currentMinus||0,row={...(mM[p.id]||{})};
+      if(isP)delete row['set_'+set];else row['set_'+set]=pl-mi;
+      u[`${b}/matrix/${p.id}/set_${set}`]=isP?null:pl-mi;
+      u[`${b}/players/${p.id}/score`]=Object.values(row).reduce((a,x)=>a+(+x||0),0); /* 対戦表の合計から再計算 */
+      u[`${b}/players/${p.id}/totalPlus`]=(p.totalPlus||0)+pl;u[`${b}/players/${p.id}/totalMinus`]=(p.totalMinus||0)+mi;
+      u[`${b}/players/${p.id}/currentPlus`]=0;u[`${b}/players/${p.id}/currentMinus`]=0;
     });
-
-    window.createRoom = async () => {
-      const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-      const roomPass = document.getElementById("createRoomPass").value.trim() || "";
-      const eventTitle = document.getElementById("createEventTitle").value.trim() || "ボードクイズ企画";
-
-      await set(ref(db, `rooms/${roomId}`), {
-        pass: roomPass,
-        title: eventTitle,
-        createdAt: Date.now(),
-        gameState: {
-          status: "standby",
-          qNum: 1,
-          qText: "",
-          aText: "",
-          cText: "",
-          pointConfig: { 
-            fast_win: 3, stand_win: 2, norm_win: 1, 
-            fast_lose: -3, stand_lose: -2, norm_lose: 0,
-            enable_bonus: true,
-            solo_bonus: 2, few_bonus: 1, few_threshold: 3
-          }
-        }
-      });
-
-      currentRoomId = roomId;
-      isHost = true;
-      localStorage.setItem("quiz_room_id", roomId);
-      localStorage.setItem("quiz_is_host", "true");
-
-      startHostMode(roomId);
-    };
-
-    window.joinRoom = async () => {
-      const roomId = document.getElementById("joinRoomId").value.trim();
-      const name = document.getElementById("joinPlayerName").value.trim();
-      const pass = document.getElementById("joinRoomPass").value.trim();
-      const initialScore = parseInt(document.getElementById("joinInitialScore").value) || 0;
-
-      if (!roomId || roomId.length !== 4) return alert("4桁のルーム番号を入力してください");
-      if (!name) return alert("お名前を入力してください");
-
-      const roomSnap = await get(ref(db, `rooms/${roomId}`));
-      if (!roomSnap.exists()) return alert("指定されたルーム番号が存在しません");
-
-      const roomData = roomSnap.val();
-      if (roomData.pass && roomData.pass !== pass) return alert("ルームパスワードが一致しません");
-
-      if (!myPlayerId) {
-        const pRef = push(ref(db, `rooms/${roomId}/players`));
-        myPlayerId = pRef.key;
-        localStorage.setItem("quiz_player_id", myPlayerId);
-      }
-      myPlayerName = name;
-      localStorage.setItem("quiz_player_name", myPlayerName);
-      currentRoomId = roomId;
-      isHost = false;
-      localStorage.setItem("quiz_room_id", roomId);
-      localStorage.setItem("quiz_is_host", "false");
-
-      await update(ref(db, `rooms/${roomId}/players/${myPlayerId}`), {
-        name: myPlayerName,
-        baseScore: initialScore,
-        score: initialScore,
-        history: {}
-      });
-
-      startPlayerMode(roomId);
-    };
-
-    window.leaveRoom = () => {
-      if (!confirm("ルームから退出しますか？")) return;
-      if (gameStateUnsub) gameStateUnsub();
-      if (playersUnsub) playersUnsub();
-      localStorage.removeItem("quiz_room_id");
-      localStorage.removeItem("quiz_is_host");
-      location.reload();
-    };
-
-    function startPlayerMode(roomId) {
-      document.getElementById("authView").classList.add("hidden");
-      document.getElementById("mainAppView").classList.remove("hidden");
-      document.getElementById("headerRoomBadge").innerText = `Room: ${roomId}`;
-      document.getElementById("tab-host-btn").classList.add("hidden");
-      document.getElementById("btnHostSettings").classList.add("hidden");
-      window.setAppTab("player");
-      bindFirebaseListeners(roomId);
+    if(set>=n)u[`${b}/gameState/status`]='done';else{u[`${b}/gameState/currentSet`]=set+1;u[`${b}/gameState/status`]='in_set'}
+    await update(ref(db),u);
+  }catch(e){mBusy=0;alert('確定に失敗しました '+(e.code||e.message))}
+};
+function drawMatrix(){
+  const L=mList(),n=L.length;
+  let h='<table class="min-w-full text-xs border-collapse"><thead><tr style="background:#0a0f22"><th class="p-2 text-left sticky left-0 z-20" style="background:#0a0f22;min-width:120px">解答者</th>';
+  for(let s=1;s<=n;s++)h+=`<th class="p-1.5 text-center" style="min-width:64px"><div class="num">S${s}</div><div class="text-[9px] truncate" style="color:var(--yl);max-width:60px">${esc(L[s-1].name)}</div></th>`;
+  h+='<th class="p-2 sticky right-0 z-20 num" style="background:#0a0f22;color:var(--cy)">計</th></tr></thead><tbody>';
+  L.forEach(p=>{
+    const row=mM[p.id]||{};let sum=0;
+    h+=`<tr class="border-b border-[#16224a]"><td class="p-2 font-bold sticky left-0 z-10 truncate" style="background:${p.order===myOrder&&!isHost?'#0c2a4a':'#060a18'}">#${p.order} ${esc(p.name)}</td>`;
+    for(let s=1;s<=n;s++){
+      const v=row['set_'+s],has=v!=null;if(has)sum+=+v;
+      h+=L[s-1].id===p.id?'<td class="text-center text-[10px]" style="color:var(--yl)">出題</td>'
+        :isHost?`<td class="text-center"><input type="number" value="${has?+v:''}" placeholder="-" onchange="mCell(${p.order},${s},this.value)" class="num w-14 bg-transparent text-center py-1 font-bold outline-none focus:bg-[#0c2a4a]" style="color:${col(+v)}"></td>`
+        :`<td class="num text-center font-bold" style="color:${col(+v)}">${has?sgn(+v):'-'}</td>`;
     }
-
-    function startHostMode(roomId) {
-      document.getElementById("authView").classList.add("hidden");
-      document.getElementById("mainAppView").classList.remove("hidden");
-      document.getElementById("headerRoomBadge").innerText = `Room: ${roomId} (Host)`;
-      document.getElementById("tab-host-btn").classList.remove("hidden");
-      document.getElementById("btnHostSettings").classList.remove("hidden");
-      document.getElementById("hostRoomIdDisplay").innerText = roomId;
-      window.setAppTab("host");
-      bindFirebaseListeners(roomId);
-    }
-
-    window.setAppTab = (tab) => {
-      document.querySelectorAll('.app-tab-btn').forEach(b => {
-        b.classList.remove('bg-blue-600', 'text-white');
-        b.classList.add('text-slate-400');
-      });
-      const active = document.getElementById(`tab-${tab}-btn`);
-      if (active) {
-        active.classList.add('bg-blue-600', 'text-white');
-        active.classList.remove('text-slate-400');
-      }
-
-      document.getElementById("playerView").classList.toggle("hidden", tab !== "player");
-      document.getElementById("scoreboardView").classList.toggle("hidden", tab !== "scoreboard");
-      document.getElementById("hostView").classList.toggle("hidden", tab !== "host");
-
-      const stickyBar = document.getElementById("stickyMyBar");
-      if (stickyBar) {
-        stickyBar.classList.toggle("hidden", tab !== "scoreboard" || isHost);
-      }
-    };
-
-    function bindFirebaseListeners(roomId) {
-      onValue(ref(db, `rooms/${roomId}/title`), (snap) => {
-        const title = snap.val() || "ボードクイズ企画";
-        document.getElementById("displayEventTitle").innerText = title;
-        document.getElementById("settingsEventTitle").value = title;
-      });
-
-      gameStateUnsub = onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
-        const state = snapshot.val() || {
-          status: "standby", qNum: 1, qText: "", aText: "", cText: "",
-          pointConfig: { fast_win: 3, stand_win: 2, norm_win: 1, fast_lose: -3, stand_lose: -2, norm_lose: 0, enable_bonus: true, solo_bonus: 2, few_bonus: 1, few_threshold: 3 }
-        };
-        window.currentState = state;
-
-        if (currentObservedQNum !== state.qNum) {
-          currentObservedQNum = state.qNum;
-          highlightSelectedButton(null);
-        }
-
-        renderPlayerUI(state);
-        updateSubmissionProgress();
-
-        if (isHost) {
-          renderHostQuickButtons(state);
-          renderHostReaderCard(state);
-          triggerBotSimulationIfNeeded(state);
-        }
-      });
-
-      playersUnsub = onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
-        cachedPlayers = snapshot.val() || {};
-        
-        const playerList = Object.entries(cachedPlayers).map(([id, data]) => ({ id, ...data }));
-        playerList.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-        let currentRank = 1;
-        for (let i = 0; i < playerList.length; i++) {
-          if (i > 0 && (playerList[i].score || 0) < (playerList[i - 1].score || 0)) {
-            currentRank = i + 1;
-          }
-          playerList[i].rank = currentRank;
-        }
-
-        const rankCounts = {};
-        playerList.forEach(p => { rankCounts[p.rank] = (rankCounts[p.rank] || 0) + 1; });
-        playerList.forEach(p => { p.isTie = rankCounts[p.rank] > 1; });
-
-        if (myPlayerId) {
-          const me = playerList.find(p => p.id === myPlayerId);
-          if (me) {
-            const rankStr = me.isTie ? `T${me.rank}位` : `${me.rank}位`;
-            document.getElementById("myCurrentScore").innerText = `${me.score || 0} pts`;
-            document.getElementById("stickyMyRank").innerText = rankStr;
-            document.getElementById("stickyMyScore").innerText = `${me.score || 0} pts`;
-
-            const curQ = window.currentState?.qNum || 1;
-            const myAction = me.history?.[`q${curQ}`]?.action;
-            if (myAction) {
-              highlightSelectedButton(myAction);
-            }
-
-            const myHist = me.history?.[`q${curQ}`];
-            if (myHist && myHist.bonus && lastNotifiedBonusQ !== curQ) {
-              lastNotifiedBonusQ = curQ;
-              triggerBonusBanner(myHist.bonus, `+${myHist.pts}pt`);
-            }
-          }
-        }
-
-        const sbBody = document.getElementById("scoreboardList");
-        sbBody.innerHTML = playerList.map((p) => {
-          const rankDisplay = p.isTie ? `T${p.rank}` : `${p.rank}`;
-          return `
-            <div class="flex items-center justify-between py-2.5 px-3 ${p.id === myPlayerId ? 'bg-blue-950/60 border border-blue-500/60 rounded-lg' : 'border-b border-slate-800/80'}">
-              <div class="flex items-center space-x-3">
-                <span class="font-bold text-xs w-7 text-center font-mono ${p.rank === 1 ? 'text-amber-400 text-sm' : p.rank === 2 ? 'text-slate-300' : p.rank === 3 ? 'text-amber-600' : 'text-slate-500'}">${rankDisplay}</span>
-                <span class="font-semibold text-xs ${p.id === myPlayerId ? 'text-blue-300' : p.isBot ? 'text-slate-400' : 'text-slate-200'}">
-                  ${p.name}
-                  ${p.id === myPlayerId ? '<span class="text-[9px] bg-blue-600/30 text-blue-300 px-1 py-0.5 rounded ml-1 border border-blue-500/30">自分</span>' : ''}
-                  ${p.isBot ? '<span class="text-[9px] bg-slate-800 text-slate-400 px-1 py-0.5 rounded ml-1 border border-slate-700">Bot</span>' : ''}
-                </span>
-              </div>
-              <span class="font-bold text-xs tracking-tight ${p.score > 0 ? 'text-blue-400' : p.score < 0 ? 'text-rose-400' : 'text-slate-400'}">${p.score || 0} pts</span>
-            </div>
-          `;
-        }).join("");
-
-        updateSubmissionProgress();
-        renderHostPlayerManagerList(playerList);
-      });
-    }
-
-    function updateSubmissionProgress() {
-      if (!window.currentState) return;
-      const totalPlayers = Object.keys(cachedPlayers).length;
-      const currentQKey = `q${window.currentState.qNum || 1}`;
-      
-      let submittedCount = 0;
-      Object.values(cachedPlayers).forEach(p => {
-        if (p.history && p.history[currentQKey] && p.history[currentQKey].action) {
-          submittedCount++;
-        }
-      });
-
-      const percent = totalPlayers > 0 ? Math.round((submittedCount / totalPlayers) * 100) : 0;
-      
-      const hostProgText = document.getElementById("hostSubmissionText");
-      const hostProgBar = document.getElementById("hostProgressBar");
-      if (hostProgText && hostProgBar) {
-        hostProgText.innerText = `採点済: ${submittedCount} / ${totalPlayers}人 (${percent}%)`;
-        hostProgBar.style.width = `${percent}%`;
-      }
-
-      const playerProgText = document.getElementById("playerSubmissionText");
-      const playerProgBar = document.getElementById("playerProgressBar");
-      if (playerProgText && playerProgBar) {
-        playerProgText.innerText = `${submittedCount} / ${totalPlayers}人`;
-        playerProgBar.style.width = `${percent}%`;
-      }
-    }
-
-    function renderPlayerUI(state) {
-      const pCfg = state.pointConfig || { fast_win: 3, stand_win: 2, norm_win: 1, fast_lose: -3, stand_lose: -2, norm_lose: 0 };
-      document.getElementById("badge_fast_win").innerText = `+${pCfg.fast_win}`;
-      document.getElementById("badge_stand_win").innerText = `+${pCfg.stand_win}`;
-      document.getElementById("badge_norm_win").innerText = `+${pCfg.norm_win}`;
-      document.getElementById("badge_fast_lose").innerText = `${pCfg.fast_lose}`;
-      document.getElementById("badge_stand_lose").innerText = `${pCfg.stand_lose}`;
-      document.getElementById("badge_norm_lose").innerText = `${pCfg.norm_lose >= 0 ? '+' : ''}${pCfg.norm_lose}`;
-
-      document.getElementById("pQNum").innerText = `Q${state.qNum}`;
-      
-      const btnGrid = document.getElementById("btnScoreBox");
-      const statusBadge = document.getElementById("pStatusBadge");
-      const answerBox = document.getElementById("pAnswerBox");
-      const commentBox = document.getElementById("pCommentBox");
-
-      if (state.status === "standby") {
-        document.getElementById("pQText").innerText = "出題待機中";
-        answerBox.classList.add("hidden");
-        btnGrid.classList.add("opacity-25", "pointer-events-none");
-        statusBadge.innerText = "待機中";
-        statusBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700";
-        highlightSelectedButton(null);
-      } else if (state.status === "answer" || state.status === "closed") {
-        document.getElementById("pQText").innerText = state.qText || "問題なし";
-        answerBox.classList.remove("hidden");
-        document.getElementById("pAText").innerText = state.aText || "解答なし";
-
-        if (state.cText && state.cText.trim() !== "") {
-          commentBox.classList.remove("hidden");
-          document.getElementById("pCText").innerText = state.cText;
-        } else {
-          commentBox.classList.add("hidden");
-        }
-        
-        if (state.status === "answer") {
-          btnGrid.classList.remove("opacity-25", "pointer-events-none");
-          statusBadge.innerText = "採点中";
-          statusBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-600/30 text-blue-300 border border-blue-500";
-        } else {
-          btnGrid.classList.add("opacity-25", "pointer-events-none");
-          statusBadge.innerText = "締切済み（前問表示中）";
-          statusBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 border border-slate-700";
-        }
-      }
-    }
-
-    function renderHostReaderCard(state) {
-      document.getElementById("readerQNum").innerText = `Q${state.qNum || 1}`;
-      document.getElementById("readerQText").innerText = state.qText || "（問題文が未設定です）";
-      document.getElementById("readerAText").innerText = state.aText || "（解答未設定）";
-      
-      const commentEl = document.getElementById("readerCText");
-      if (state.cText && state.cText.trim() !== "") {
-        commentEl.innerText = state.cText;
-        document.getElementById("readerCBox").classList.remove("hidden");
-      } else {
-        document.getElementById("readerCBox").classList.add("hidden");
-      }
-    }
-
-    function renderHostQuickButtons(state) {
-      const btnOpen = document.getElementById("btnQuickOpen");
-      const btnCloseNext = document.getElementById("btnQuickCloseNext");
-
-      if (state.status === "answer") {
-        btnOpen.disabled = true;
-        btnOpen.className = "w-full py-3 rounded-xl font-bold text-slate-500 bg-slate-900 border border-slate-800 cursor-not-allowed text-xs";
-        
-        btnCloseNext.disabled = false;
-        btnCloseNext.className = "w-full py-3.5 rounded-xl font-bold text-white bg-indigo-600 active:bg-indigo-700 shadow-lg text-xs transition";
-      } else {
-        btnOpen.disabled = false;
-        btnOpen.className = "w-full py-3.5 rounded-xl font-bold text-white bg-blue-600 active:bg-blue-700 shadow-lg text-xs transition";
-
-        btnCloseNext.disabled = true;
-        btnCloseNext.className = "w-full py-3 rounded-xl font-bold text-slate-500 bg-slate-900 border border-slate-800 cursor-not-allowed text-xs";
-      }
-    }
-
-    window.hostActionOpenCurrent = () => {
-      window.hostUpdateState('answer');
-    };
-
-    window.hostActionCloseAndNext = async () => {
-      const qNum = parseInt(document.getElementById("hostQNum").value) || 1;
-      await calculateBonuses(qNum);
-      await set(ref(db, `rooms/${currentRoomId}/gameState/status`), "closed");
-
-      const qInput = document.getElementById("hostQNum");
-      const nextIdx = qNum + 1;
-      qInput.value = nextIdx;
-      loadQuestionToHostForm(nextIdx - 1);
-    };
-
-    async function calculateBonuses(qNum) {
-      const pCfg = getHostPointConfig();
-      if (!pCfg.enable_bonus) return;
-      if (!pCfg.solo_bonus && !pCfg.few_bonus) return;
-
-      const qKey = `q${qNum}`;
-      const playersSnap = await get(ref(db, `rooms/${currentRoomId}/players`));
-      const players = playersSnap.val() || {};
-
-      const winners = [];
-      Object.entries(players).forEach(([pid, pData]) => {
-        const hist = pData.history || {};
-        if (hist[qKey] && ["fast_win", "stand_win", "norm_win"].includes(hist[qKey].action)) {
-          winners.push({ id: pid, name: pData.name });
-        }
-      });
-
-      const winnerCount = winners.length;
-      if (winnerCount === 0) return;
-
-      const updates = {};
-      let bonusToAdd = 0;
-      let bonusType = "";
-
-      if (winnerCount === 1 && pCfg.solo_bonus > 0) {
-        bonusToAdd = pCfg.solo_bonus;
-        bonusType = "単独正解 BONUS";
-      } else if (winnerCount <= pCfg.few_threshold && pCfg.few_bonus > 0) {
-        bonusToAdd = pCfg.few_bonus;
-        bonusType = `少数正解 BONUS (${winnerCount}人)`;
-      }
-
-      if (bonusToAdd > 0) {
-        winners.forEach(w => {
-          const currentPts = players[w.id].history[qKey].pts || 0;
-          const newPts = currentPts + bonusToAdd;
-          updates[`rooms/${currentRoomId}/players/${w.id}/history/${qKey}/pts`] = newPts;
-          updates[`rooms/${currentRoomId}/players/${w.id}/history/${qKey}/bonus`] = bonusType;
-
-          let total = players[w.id].baseScore || 0;
-          Object.entries(players[w.id].history || {}).forEach(([k, v]) => {
-            if (k === qKey) total += newPts;
-            else total += (v.pts || 0);
-          });
-          updates[`rooms/${currentRoomId}/players/${w.id}/score`] = total;
-        });
-
-        await update(ref(db), updates);
-
-        const winnerNames = winners.map(w => w.name).join(", ");
-        triggerBonusBanner(bonusType, `+${bonusToAdd}pt (${winnerNames})`);
-      }
-    }
-
-    function triggerBonusBanner(title, detail) {
-      const banner = document.getElementById("bonusBannerModal");
-      document.getElementById("bonusBannerTitle").innerText = title;
-      document.getElementById("bonusBannerDetail").innerText = detail;
-
-      banner.classList.remove("hidden");
-      banner.classList.remove("animate-bonus");
-      void banner.offsetWidth;
-      banner.classList.add("animate-bonus");
-
-      setTimeout(() => {
-        banner.classList.add("hidden");
-      }, 3200);
-    }
-
-    window.submitAction = (actionKey) => {
-      if (!myPlayerId || !window.currentState || !currentRoomId) return;
-      if (window.currentState.status !== "answer") return;
-
-      const qNum = window.currentState.qNum || 1;
-      const pointMap = window.currentState.pointConfig || {
-        fast_win: 3, stand_win: 2, norm_win: 1,
-        fast_lose: -3, stand_lose: -2, norm_lose: 0
-      };
-
-      const pts = pointMap[actionKey] !== undefined ? pointMap[actionKey] : 0;
-      highlightSelectedButton(actionKey);
-
-      update(ref(db, `rooms/${currentRoomId}/players/${myPlayerId}/history`), {
-        [`q${qNum}`]: { action: actionKey, pts: pts }
-      }).then(() => {
-        recalcMyTotalScore();
-      });
-    };
-
-    function highlightSelectedButton(actionKey) {
-      document.querySelectorAll('.score-action-btn').forEach(btn => {
-        btn.classList.remove('ring-4', 'ring-blue-400', 'scale-[0.98]', 'brightness-125');
-      });
-      if (actionKey) {
-        const target = document.getElementById(`btn-${actionKey}`);
-        if (target) target.classList.add('ring-4', 'ring-blue-400', 'scale-[0.98]', 'brightness-125');
-      }
-    }
-
-    function recalcMyTotalScore() {
-      onValue(ref(db, `rooms/${currentRoomId}/players/${myPlayerId}`), (snapshot) => {
-        const pData = snapshot.val() || {};
-        const history = pData.history || {};
-        let total = pData.baseScore || 0;
-        Object.values(history).forEach(h => { total += (h.pts || 0); });
-        update(ref(db, `rooms/${currentRoomId}/players/${myPlayerId}`), { score: total });
-      }, { onlyOnce: true });
-    }
-
-    window.stepValue = (id, delta) => {
-      const input = document.getElementById(id);
-      let val = parseInt(input.value) || 0;
-      input.value = val + delta;
-      syncPointConfigToDB();
-    };
-
-    window.toggleBonusEnabled = () => {
-      const isEnabled = document.getElementById("cfg_enable_bonus").checked;
-      document.getElementById("bonusSettingsContainer").classList.toggle("opacity-40", !isEnabled);
-      document.getElementById("bonusSettingsContainer").classList.toggle("pointer-events-none", !isEnabled);
-      syncPointConfigToDB();
-    };
-
-    function getHostPointConfig() {
-      return {
-        fast_win: parseInt(document.getElementById("cfg_fast_win").value) || 0,
-        stand_win: parseInt(document.getElementById("cfg_stand_win").value) || 0,
-        norm_win: parseInt(document.getElementById("cfg_norm_win").value) || 0,
-        fast_lose: parseInt(document.getElementById("cfg_fast_lose").value) || 0,
-        stand_lose: parseInt(document.getElementById("cfg_stand_lose").value) || 0,
-        norm_lose: parseInt(document.getElementById("cfg_norm_lose").value) || 0,
-        enable_bonus: document.getElementById("cfg_enable_bonus").checked,
-        solo_bonus: parseInt(document.getElementById("cfg_solo_bonus").value) || 0,
-        few_bonus: parseInt(document.getElementById("cfg_few_bonus").value) || 0,
-        few_threshold: parseInt(document.getElementById("cfg_few_threshold").value) || 0
-      };
-    }
-
-    function syncPointConfigToDB() {
-      if (!currentRoomId) return;
-      const pointConfig = getHostPointConfig();
-      update(ref(db, `rooms/${currentRoomId}/gameState`), { pointConfig });
-    }
-
-    window.saveEventTitle = async () => {
-      if (!currentRoomId) return;
-      const newTitle = document.getElementById("settingsEventTitle").value.trim() || "ボードクイズ企画";
-      await set(ref(db, `rooms/${currentRoomId}/title`), newTitle);
-      alert("企画名を更新しました");
-    };
-
-    window.hostUpdateState = (status) => {
-      const qNum = parseInt(document.getElementById("hostQNum").value) || 1;
-      const qText = document.getElementById("hostQText").value;
-      const aText = document.getElementById("hostAText").value;
-      const cText = document.getElementById("hostCText").value;
-      const pointConfig = getHostPointConfig();
-
-      set(ref(db, `rooms/${currentRoomId}/gameState`), {
-        qNum: qNum,
-        qText: qText,
-        aText: aText,
-        cText: cText,
-        pointConfig: pointConfig,
-        status: status
-      });
-    };
-
-    window.hostPrevQuestion = () => {
-      const qInput = document.getElementById("hostQNum");
-      const prevIdx = Math.max(1, parseInt(qInput.value) - 1);
-      qInput.value = prevIdx;
-      loadQuestionToHostForm(prevIdx - 1);
-    };
-
-    window.hostNextQuestionManual = () => {
-      const qInput = document.getElementById("hostQNum");
-      const nextIdx = parseInt(qInput.value) + 1;
-      qInput.value = nextIdx;
-      loadQuestionToHostForm(nextIdx - 1);
-    };
-
-    function loadQuestionToHostForm(index) {
-      if (importedQuestions[index]) {
-        const item = importedQuestions[index];
-        document.getElementById("hostQText").value = item.q || "";
-        document.getElementById("hostAText").value = item.a || "";
-        document.getElementById("hostCText").value = item.c || "";
-      } else {
-        document.getElementById("hostQText").value = "";
-        document.getElementById("hostAText").value = "";
-        document.getElementById("hostCText").value = "";
-      }
-      const qNum = parseInt(document.getElementById("hostQNum").value);
-      document.getElementById("readerQNum").innerText = `Q${qNum}`;
-      document.getElementById("readerQText").innerText = document.getElementById("hostQText").value || "（問題文未設定）";
-      document.getElementById("readerAText").innerText = document.getElementById("hostAText").value || "（解答未設定）";
-      document.getElementById("readerCText").innerText = document.getElementById("hostCText").value || "";
-      document.getElementById("readerCBox").classList.toggle("hidden", !document.getElementById("hostCText").value);
-    }
-
-    window.hostSelectQuestionByIndex = (idx) => {
-      if (importedQuestions[idx]) {
-        document.getElementById("hostQNum").value = idx + 1;
-        loadQuestionToHostForm(idx);
-        closeSettingsModal();
-      }
-    };
-
-    window.hostVoidCurrentQuestion = async () => {
-      const qNum = parseInt(document.getElementById("hostQNum").value) || 1;
-      if (!confirm(`第 ${qNum} 問を無効（全員0点）にしますか？`)) return;
-
-      const playersSnap = await get(ref(db, `rooms/${currentRoomId}/players`));
-      const players = playersSnap.val() || {};
-      const updates = {};
-
-      Object.entries(players).forEach(([pid, pData]) => {
-        const hist = pData.history || {};
-        if (hist[`q${qNum}`]) {
-          updates[`rooms/${currentRoomId}/players/${pid}/history/q${qNum}/pts`] = 0;
-          updates[`rooms/${currentRoomId}/players/${pid}/history/q${qNum}/action`] = "void";
-        }
-        let newTotal = pData.baseScore || 0;
-        Object.entries(hist).forEach(([qk, qVal]) => {
-          if (qk === `q${qNum}`) return;
-          newTotal += (qVal.pts || 0);
-        });
-        updates[`rooms/${currentRoomId}/players/${pid}/score`] = newTotal;
-      });
-
-      await update(ref(db), updates);
-      alert(`第 ${qNum} 問を無効化しました。`);
-    };
-
-    window.hostResetScores = () => {
-      if (!confirm("全員の得点を初期状態（持ち点）にリセットしますか？")) return;
-      onValue(ref(db, `rooms/${currentRoomId}/players`), (snap) => {
-        const players = snap.val() || {};
-        const updates = {};
-        Object.entries(players).forEach(([id, p]) => {
-          updates[`rooms/${currentRoomId}/players/${id}/score`] = p.baseScore || 0;
-          updates[`rooms/${currentRoomId}/players/${id}/history`] = {};
-        });
-        update(ref(db), updates);
-      }, { onlyOnce: true });
-    };
-
-    // --- 出題者による個別得点修正 ---
-    window.modifyPlayerScore = async (playerId, delta) => {
-      if (!currentRoomId || !cachedPlayers[playerId]) return;
-      const currentScore = cachedPlayers[playerId].score || 0;
-      const newScore = currentScore + delta;
-      await update(ref(db, `rooms/${currentRoomId}/players/${playerId}`), {
-        score: newScore
-      });
-    };
-
-    window.setPlayerScoreDirect = async (playerId, inputElem) => {
-      if (!currentRoomId || !cachedPlayers[playerId]) return;
-      const newScore = parseInt(inputElem.value) || 0;
-      await update(ref(db, `rooms/${currentRoomId}/players/${playerId}`), {
-        score: newScore
-      });
-    };
-
-    function renderHostPlayerManagerList(players) {
-      const container = document.getElementById("playerManagerList");
-      if (!container) return;
-      if (!players.length) {
-        container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">参加者がいません</p>';
-        return;
-      }
-      container.innerHTML = players.map(p => `
-        <div class="p-2 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between gap-2">
-          <div class="flex-1 min-w-0">
-            <div class="font-bold text-xs text-slate-200 truncate">${p.name} ${p.isBot ? '<span class="text-[9px] text-slate-500">Bot</span>' : ''}</div>
-            <div class="text-[10px] text-slate-400">初期持ち点: ${p.baseScore || 0}pt</div>
-          </div>
-          <div class="flex items-center space-x-1 shrink-0">
-            <button onclick="modifyPlayerScore('${p.id}', -1)" class="w-6 h-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded font-bold text-xs">-1</button>
-            <input type="number" value="${p.score || 0}" onchange="setPlayerScoreDirect('${p.id}', this)" class="w-12 bg-slate-900 border border-slate-700 rounded text-center py-0.5 text-xs text-white font-bold font-mono">
-            <button onclick="modifyPlayerScore('${p.id}', 1)" class="w-6 h-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded font-bold text-xs">+1</button>
-          </div>
-        </div>
-      `).join("");
-    }
-
-    window.addMockPlayers = async (count) => {
-      if (!currentRoomId) return;
-      const updates = {};
-      const currentCount = Object.values(cachedPlayers).filter(p => p.isBot).length;
-
-      for (let i = 1; i <= count; i++) {
-        const botIndex = currentCount + i;
-        const botId = `bot_${Date.now()}_${botIndex}`;
-        updates[`rooms/${currentRoomId}/players/${botId}`] = {
-          name: `Bot ${botIndex}`,
-          baseScore: 0,
-          score: 0,
-          history: {},
-          isBot: true
-        };
-      }
-      await update(ref(db), updates);
-    };
-
-    window.removeMockPlayers = async () => {
-      if (!currentRoomId) return;
-      if (!confirm("追加したダミープレイヤーをすべて削除しますか？")) return;
-      
-      const updates = {};
-      Object.entries(cachedPlayers).forEach(([id, p]) => {
-        if (p.isBot) {
-          updates[`rooms/${currentRoomId}/players/${id}`] = null;
-        }
-      });
-      await update(ref(db), updates);
-    };
-
-    function triggerBotSimulationIfNeeded(state) {
-      botTimeouts.forEach(t => clearTimeout(t));
-      botTimeouts = [];
-
-      const autoSimCheckbox = document.getElementById("chkAutoBotSubmit");
-      if (!autoSimCheckbox || !autoSimCheckbox.checked) return;
-      if (state.status !== "answer") return;
-
-      const qNum = state.qNum || 1;
-      const qKey = `q${qNum}`;
-      const bots = Object.entries(cachedPlayers).filter(([_, p]) => p.isBot);
-      const pointMap = state.pointConfig || { fast_win: 3, stand_win: 2, norm_win: 1, fast_lose: -3, stand_lose: -2, norm_lose: 0 };
-
-      const actions = [
-        "norm_win", "norm_win",
-        "norm_lose", "norm_lose",
-        "fast_win",
-        "stand_win",
-        "stand_lose"
-      ];
-
-      bots.forEach(([botId, botData]) => {
-        if (botData.history && botData.history[qKey] && botData.history[qKey].action) return;
-
-        const delay = Math.floor(Math.random() * 1600) + 400;
-        const t = setTimeout(async () => {
-          const randomAction = actions[Math.floor(Math.random() * actions.length)];
-          const pts = pointMap[randomAction] !== undefined ? pointMap[randomAction] : 0;
-
-          const hist = botData.history || {};
-          hist[qKey] = { action: randomAction, pts: pts };
-
-          let total = botData.baseScore || 0;
-          Object.values(hist).forEach(h => { total += (h.pts || 0); });
-
-          await update(ref(db, `rooms/${currentRoomId}/players/${botId}`), {
-            history: hist,
-            score: total
-          });
-        }, delay);
-
-        botTimeouts.push(t);
-      });
-    }
-
-    window.handleCSVUpload = (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        parseCSV(e.target.result);
-      };
-      reader.readAsText(file, "UTF-8");
-    };
-
-    function parseCSV(text) {
-      const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== "");
-      importedQuestions = [];
-      
-      lines.forEach((line, index) => {
-        const cols = line.split(",").map(c => c.trim().replace(/^["']|["']$/g, ''));
-        if (cols.length >= 2) {
-          let q = "", a = "", c = "";
-          if (cols.length >= 4 && !isNaN(cols[0])) {
-            q = cols[1]; a = cols[2]; c = cols[3] || "";
-          } else if (cols.length >= 3) {
-            if (!isNaN(cols[0])) {
-              q = cols[1]; a = cols[2]; c = "";
-            } else {
-              q = cols[0]; a = cols[1]; c = cols[2] || "";
-            }
-          } else {
-            q = cols[0]; a = cols[1]; c = "";
-          }
-
-          if (index === 0 && (q.includes("問題") || q.toLowerCase().includes("question"))) return;
-          importedQuestions.push({ q, a, c });
-        }
-      });
-
-      if (importedQuestions.length > 0) {
-        alert(`${importedQuestions.length} 問読み込みました`);
-        renderQuestionManagerList();
-        window.hostSelectQuestionByIndex(0);
-      } else {
-        alert("CSVの形式を認識できませんでした");
-      }
-    }
-
-    window.openSettingsModal = () => {
-      document.getElementById("settingsModal").classList.remove("hidden");
-      renderQuestionManagerList();
-    };
-
-    window.closeSettingsModal = () => {
-      document.getElementById("settingsModal").classList.add("hidden");
-    };
-
-    window.switchSettingsTab = (tab) => {
-      document.getElementById("tabBtnPointSettings").classList.toggle("border-blue-500", tab === 'points');
-      document.getElementById("tabBtnPointSettings").classList.toggle("text-blue-400", tab === 'points');
-      document.getElementById("tabBtnPointSettings").classList.toggle("text-slate-400", tab !== 'points');
-
-      document.getElementById("tabBtnQuestionSettings").classList.toggle("border-blue-500", tab === 'questions');
-      document.getElementById("tabBtnQuestionSettings").classList.toggle("text-blue-400", tab === 'questions');
-      document.getElementById("tabBtnQuestionSettings").classList.toggle("text-slate-400", tab !== 'questions');
-
-      document.getElementById("tabBtnPlayerSettings").classList.toggle("border-blue-500", tab === 'players');
-      document.getElementById("tabBtnPlayerSettings").classList.toggle("text-blue-400", tab === 'players');
-      document.getElementById("tabBtnPlayerSettings").classList.toggle("text-slate-400", tab !== 'players');
-
-      document.getElementById("settingsTabContentPoints").classList.toggle("hidden", tab !== 'points');
-      document.getElementById("settingsTabContentQuestions").classList.toggle("hidden", tab !== 'questions');
-      document.getElementById("settingsTabContentPlayers").classList.toggle("hidden", tab !== 'players');
-    };
-
-    function renderQuestionManagerList() {
-      const container = document.getElementById("managerListItems");
-      if (!importedQuestions.length) {
-        container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">CSV未読込</p>';
-        return;
-      }
-      container.innerHTML = importedQuestions.map((item, idx) => `
-        <div class="p-2.5 bg-slate-800/80 border border-slate-700/80 rounded-lg flex justify-between items-start gap-2">
-          <div class="space-y-0.5 text-xs flex-1">
-            <div class="font-bold text-slate-200">Q${idx + 1}. ${item.q}</div>
-            <div class="text-blue-400 font-bold">答: ${item.a}</div>
-            ${item.c ? `<div class="text-slate-400 text-[10px]">${item.c}</div>` : ''}
-          </div>
-          <button onclick="hostSelectQuestionByIndex(${idx})" class="bg-blue-600 active:bg-blue-700 text-white font-bold text-xs px-2.5 py-1 rounded shrink-0">
-            セット
-          </button>
-        </div>
-      `).join("");
-    }
-  </script>
+    h+=`<td class="num text-center font-black sticky right-0 z-10" style="background:#060a18;color:var(--cy)">${sum}</td></tr>`;
+  });
+  $('mxBox').innerHTML=h+'</tbody></table>';$('mxHead').textContent=isHost?'対戦表（タップして修正できます）':'対戦表（閲覧のみ）';
+}
+W.mCell=async(o,s,raw)=>{
+  if(!isHost)return;const k='p_'+o,v=raw===''?null:parseInt(raw),row={...(mM[k]||{})};
+  if(v==null)delete row['set_'+s];else row['set_'+s]=v;
+  await update(ref(db),{[`${R()}/matrix/${k}/set_${s}`]:v,[`${R()}/players/${k}/score`]:Object.values(row).reduce((a,x)=>a+(+x||0),0)});
+};
+W.saveRoster=async()=>{
+  const lines=$('rosterText').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!lines.length)return alert('名簿を入力してください');
+  const u={};
+  lines.forEach((ln,i)=>{
+    const p=ln.split(',').map(x=>x.trim());let o=i+1,name=p[0];
+    if(p.length>=2&&/^\d+$/.test(p[0])){o=+p[0];name=p.slice(1).join(',')}
+    if(!name||o<1||o>99)return;const k=`${R()}/players/p_${o}`;u[k+'/name']=name;u[k+'/order']=o;
+    if(!mP['p_'+o])Object.assign(u,{[k+'/score']:0,[k+'/totalPlus']:0,[k+'/totalMinus']:0,[k+'/currentPlus']:0,[k+'/currentMinus']:0});
+  });
+  await update(ref(db),u);alert('名簿を更新しました');W.closeSettingsModal();
+};
+W.exportMatrixCSV=()=>{
+  const L=mList();let c='順,名前,'+L.map((p,i)=>`"S${i+1}_${p.name.replace(/"/g,'""')}"`).join(',')+',合計\n';
+  L.forEach(p=>{const r=mM[p.id]||{};c+=`${p.order},"${p.name.replace(/"/g,'""')}"`;L.forEach((q,i)=>{c+=','+(q.id===p.id?'[出題]':(r['set_'+(i+1)]??''))});c+=`,${p.score||0}\n`});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+c],{type:'text/csv;charset=utf-8;'}));a.download=`motiyori_${roomId}.csv`;a.click();
+};
+</script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white relative">
+<body>
 
-  <!-- ボーナス発生トースト演出 -->
-  <div id="bonusBannerModal" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-11/12 max-w-xs">
-    <div class="bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 text-slate-950 p-3 rounded-2xl shadow-2xl border-2 border-yellow-200 flex flex-col items-center text-center">
-      <span id="bonusBannerTitle" class="text-xs font-black tracking-wider uppercase drop-shadow-sm">BONUS</span>
-      <span id="bonusBannerDetail" class="text-sm font-black mt-0.5 drop-shadow-sm">+2pt</span>
-    </div>
+<div id="bonusBanner" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-[80] pointer-events-none w-11/12 max-w-xs">
+  <div class="p-3 text-center" style="background:linear-gradient(90deg,var(--mg),var(--yl));color:#10001a;border:2px solid #fff;box-shadow:0 0 30px var(--mg)">
+    <div id="bonusTitle" class="num text-xs font-black">BONUS</div><div id="bonusDetail" class="num text-sm font-black mt-0.5">+2pt</div>
   </div>
+</div>
 
-  <!-- 認証・ルーム選択画面 -->
-  <div id="authView" class="max-w-xs mx-auto px-4 min-h-screen flex flex-col justify-center space-y-4">
-    <div class="text-center">
-      <h1 class="text-xl font-bold text-white tracking-tight">BoardQuiz Live</h1>
-      <p class="text-[11px] text-slate-400">得点管理システム</p>
-    </div>
-
-    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-      <div class="text-xs font-bold text-slate-200">参加</div>
-      <div class="space-y-2">
-        <div>
-          <label class="text-[10px] text-slate-400 block mb-0.5">ルーム番号 (4桁)</label>
-          <input type="number" id="joinRoomId" placeholder="0000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-center text-base font-bold text-white focus:outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="text-[10px] text-slate-400 block mb-0.5">名前 / 席番号</label>
-          <input type="text" id="joinPlayerName" placeholder="名前" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-        </div>
-        <div class="grid grid-cols-2 gap-1.5">
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-0.5">持ち点 (初期点)</label>
-            <input type="number" id="joinInitialScore" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white text-center font-bold focus:outline-none focus:border-blue-500">
-          </div>
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-0.5">合言葉 (任意)</label>
-            <input type="password" id="joinRoomPass" placeholder="空欄可" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-          </div>
-        </div>
-      </div>
-      <button onclick="joinRoom()" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition">
-        入室
-      </button>
-    </div>
-
-    <div class="bg-slate-900/60 border border-slate-800/80 p-3 rounded-xl space-y-2">
-      <div class="text-[11px] font-bold text-slate-400">出題者</div>
-      <input type="text" id="createEventTitle" placeholder="企画名 (例: 合宿2R ボードクイズ)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none">
-      <input type="text" id="createRoomPass" placeholder="参加パスワード設定 (任意)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none">
-      <button onclick="createRoom()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-1.5 rounded-lg text-[11px] border border-slate-700">
-        ルーム作成
-      </button>
-    </div>
+<!-- ログイン -->
+<div id="authView" class="max-w-xs mx-auto px-4 min-h-screen flex flex-col justify-center space-y-5">
+  <div class="text-center"><h1 class="hd text-2xl font-black">BOARD QUIZ<br>LIVE</h1><p class="text-xs mu mt-2">得点管理システム</p></div>
+  <div class="pn space-y-3">
+    <b class="text-sm">参加する</b>
+    <div><label class="text-xs mu block mb-1">ルーム番号（4桁）</label><input type="number" id="joinRoomId" placeholder="0000" class="inp num text-center text-lg font-bold"></div>
+    <div><label class="text-xs mu block mb-1">名前 / 席番号</label><input type="text" id="joinPlayerName" placeholder="名前" class="inp"></div>
+    <div><label class="text-xs mu block mb-1">出題順の番号（持ち寄りボードのみ）</label><input type="number" id="joinOrderNum" placeholder="例: 5" class="inp num"></div>
+    <div><label class="text-xs mu block mb-1">パスワード（設定されている場合）</label><input type="password" id="joinRoomPass" class="inp"></div>
+    <button onclick="joinRoom()" class="btn sel w-full py-3 text-sm">入室する</button>
   </div>
-
-  <!-- メインアプリ画面 -->
-  <div id="mainAppView" class="hidden max-w-sm mx-auto h-[100dvh] flex flex-col overflow-hidden">
-    <!-- ヘッダー -->
-    <header class="bg-slate-900/95 border-b border-slate-800 px-3 py-2 flex flex-col gap-1.5 shrink-0 z-40">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-2">
-          <button onclick="leaveRoom()" class="text-[11px] text-slate-400 hover:text-rose-400">退出</button>
-          <span id="headerRoomBadge" class="text-[11px] font-mono font-bold bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">Room: ----</span>
-        </div>
-        <div class="flex items-center space-x-1.5">
-          <button id="btnHostSettings" onclick="openSettingsModal()" class="hidden px-2 py-1 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 rounded text-xs">設定</button>
-          <div class="flex space-x-0.5 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-xs">
-            <button id="tab-player-btn" onclick="setAppTab('player')" class="app-tab-btn px-2.5 py-1 rounded bg-blue-600 text-white font-medium">解答</button>
-            <button id="tab-scoreboard-btn" onclick="setAppTab('scoreboard')" class="app-tab-btn px-2.5 py-1 rounded text-slate-400 font-medium">順位</button>
-            <button id="tab-host-btn" onclick="setAppTab('host')" class="app-tab-btn hidden px-2.5 py-1 rounded text-slate-400 font-medium">出題</button>
-          </div>
-        </div>
-      </div>
-      <!-- 企画名表示 -->
-      <div class="flex justify-between items-center px-0.5">
-        <span id="displayEventTitle" class="text-xs font-bold text-slate-200 truncate">ボードクイズ企画</span>
-      </div>
-    </header>
-
-    <!-- メイン領域 -->
-    <main class="flex-1 overflow-hidden p-2.5 flex flex-col">
-
-      <!-- 1. 解答者画面 -->
-      <div id="playerView" class="h-full flex flex-col justify-between overflow-hidden">
-        <div class="flex-1 overflow-y-auto space-y-2 pr-0.5">
-          <div class="bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl space-y-1">
-            <div class="flex justify-between items-center">
-              <span class="text-[11px] text-slate-400">合計得点</span>
-              <span id="myCurrentScore" class="text-lg font-black text-blue-400 tracking-tight">0 pts</span>
-            </div>
-            <div class="space-y-0.5 pt-0.5 border-t border-slate-800/60">
-              <div class="flex justify-between text-[9px] text-slate-400 font-mono">
-                <span>採点進捗</span>
-                <span id="playerSubmissionText">0 / 0人</span>
-              </div>
-              <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
-                <div id="playerProgressBar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
-            <div class="flex justify-between items-center">
-              <span id="pQNum" class="text-xs font-mono font-bold text-slate-400">Q1</span>
-              <span id="pStatusBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">待機中</span>
-            </div>
-            
-            <div id="pQText" class="text-sm font-semibold text-slate-100 min-h-[42px] leading-snug break-words">
-              出題待機中
-            </div>
-            
-            <div id="pAnswerBox" class="hidden space-y-1.5 pt-1.5 border-t border-slate-800/60">
-              <div class="bg-blue-950/40 border border-blue-800/40 p-2 rounded-lg">
-                <span class="text-[9px] font-bold text-blue-400 block uppercase mb-0.5">正解</span>
-                <span id="pAText" class="text-sm font-bold text-white">--</span>
-              </div>
-              <div id="pCommentBox" class="hidden bg-slate-950 p-2 rounded-lg border border-slate-800">
-                <span id="pCText" class="text-[11px] text-slate-300 leading-tight">--</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="btnScoreBox" class="shrink-0 pt-2 space-y-1.5 opacity-25 pointer-events-none transition-opacity">
-          <div class="grid grid-cols-2 gap-1.5">
-            <button id="btn-fast_win" onclick="submitAction('fast_win')" class="score-action-btn bg-sky-950/80 active:bg-sky-900 border border-sky-800/40 text-white p-2 rounded-lg flex items-center justify-between transition">
-              <span class="text-xs font-medium text-sky-200">早押し正解</span>
-              <span id="badge_fast_win" class="text-xs font-mono font-bold text-sky-400">+3</span>
-            </button>
-            <button id="btn-fast_lose" onclick="submitAction('fast_lose')" class="score-action-btn bg-rose-950/80 active:bg-rose-900 border border-rose-800/40 text-white p-2 rounded-lg flex items-center justify-between transition">
-              <span class="text-xs font-medium text-rose-200">早押し誤答</span>
-              <span id="badge_fast_lose" class="text-xs font-mono font-bold text-rose-400">-3</span>
-            </button>
-          </div>
-
-          <div class="grid grid-cols-2 gap-1.5">
-            <button id="btn-stand_win" onclick="submitAction('stand_win')" class="score-action-btn bg-indigo-950/80 active:bg-indigo-900 border border-indigo-800/40 text-white p-2 rounded-lg flex items-center justify-between transition">
-              <span class="text-xs font-medium text-indigo-200">起立正解</span>
-              <span id="badge_stand_win" class="text-xs font-mono font-bold text-indigo-400">+2</span>
-            </button>
-            <button id="btn-stand_lose" onclick="submitAction('stand_lose')" class="score-action-btn bg-rose-950/40 active:bg-rose-900/60 border border-rose-900/30 text-white p-2 rounded-lg flex items-center justify-between transition">
-              <span class="text-xs font-medium text-rose-300">起立誤答</span>
-              <span id="badge_stand_lose" class="text-xs font-mono font-bold text-rose-400">-2</span>
-            </button>
-          </div>
-
-          <div class="grid grid-cols-2 gap-1.5 pt-0.5">
-            <button id="btn-norm_win" onclick="submitAction('norm_win')" class="score-action-btn bg-blue-600 active:bg-blue-700 text-white py-4 px-3 rounded-xl flex flex-col items-center justify-center shadow transition">
-              <span class="text-sm font-bold">通常正解</span>
-              <span id="badge_norm_win" class="text-xs font-mono font-bold text-blue-200 mt-0.5">+1</span>
-            </button>
-            <button id="btn-norm_lose" onclick="submitAction('norm_lose')" class="score-action-btn bg-slate-800 active:bg-slate-700 border border-slate-700 text-white py-4 px-3 rounded-xl flex flex-col items-center justify-center transition">
-              <span class="text-sm font-bold text-slate-200">通常誤答</span>
-              <span id="badge_norm_lose" class="text-xs font-mono font-bold text-slate-400 mt-0.5">±0</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. 順位表画面 -->
-      <div id="scoreboardView" class="hidden h-full flex flex-col overflow-hidden pb-10">
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex-1 flex flex-col overflow-hidden">
-          <div class="text-xs font-bold text-slate-300 mb-2 px-1 shrink-0">ランキング</div>
-          <div id="scoreboardList" class="space-y-1 overflow-y-auto flex-1 pr-0.5"></div>
-        </div>
-      </div>
-
-      <!-- 3. 出題者画面 -->
-      <div id="hostView" class="hidden h-full overflow-y-auto space-y-2.5 pr-0.5">
-
-        <!-- 問読みカード -->
-        <div class="bg-slate-900 border border-blue-500/40 p-3.5 rounded-2xl shadow-xl space-y-2.5">
-          <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
-            <div class="flex items-center space-x-2">
-              <span id="readerQNum" class="text-sm font-mono font-black text-blue-400">Q1</span>
-              <span class="text-[10px] text-slate-400 font-mono">問読み用カード</span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <button onclick="hostPrevQuestion()" class="bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">前へ</button>
-              <button onclick="hostNextQuestionManual()" class="bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">次へ</button>
-            </div>
-          </div>
-
-          <div id="readerQText" class="text-[17px] font-bold text-slate-50 leading-relaxed min-h-[58px]">
-            （問題文をセットしてください）
-          </div>
-
-          <div class="pt-1 space-y-1.5">
-            <div class="bg-blue-950/70 border border-blue-600/50 px-3 py-2 rounded-xl flex justify-between items-center">
-              <span class="text-[10px] font-bold text-blue-300">正解</span>
-              <span id="readerAText" class="text-base font-black text-white">--</span>
-            </div>
-            <div id="readerCBox" class="hidden bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
-              <span class="text-[10px] text-slate-400 block">解説</span>
-              <span id="readerCText" class="text-xs text-slate-200 leading-snug">--</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- クイック進行ボタン ＆ 採点進捗 -->
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
-          <div class="flex justify-between items-center text-[10px]">
-            <span class="text-slate-400 font-mono">Room: <b id="hostRoomIdDisplay" class="text-white">----</b></span>
-            <span id="hostSubmissionText" class="text-blue-400 font-bold font-mono">採点済: 0 / 0人 (0%)</span>
-          </div>
-
-          <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
-            <div id="hostProgressBar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
-          </div>
-
-          <div class="space-y-1.5 pt-1">
-            <button id="btnQuickOpen" onclick="hostActionOpenCurrent()" class="w-full py-3.5 rounded-xl font-bold text-white bg-blue-600 active:bg-blue-700 shadow-lg text-xs transition">
-              1. この問題を表示（問題・解答・採点開始）
-            </button>
-            <button id="btnQuickCloseNext" onclick="hostActionCloseAndNext()" class="w-full py-3 rounded-xl font-bold text-slate-500 bg-slate-900 border border-slate-800 cursor-not-allowed text-xs transition">
-              2. 締め切って次の問題へ
-            </button>
-          </div>
-        </div>
-
-        <!-- テスト用ダミープレイヤー -->
-        <details class="bg-slate-900/90 border border-amber-500/30 p-2.5 rounded-xl text-xs">
-          <summary class="text-amber-400 font-bold cursor-pointer text-[11px]">テスト用ダミープレイヤー</summary>
-          <div class="pt-2 space-y-2 text-[11px]">
-            <div class="flex items-center space-x-2">
-              <input type="checkbox" id="chkAutoBotSubmit" checked class="rounded bg-slate-950 border-slate-700 text-blue-600">
-              <label for="chkAutoBotSubmit" class="text-slate-300 font-medium">正解オープン時にBotが自動採点</label>
-            </div>
-            <div class="grid grid-cols-3 gap-1.5">
-              <button onclick="addMockPlayers(5)" class="bg-slate-800 active:bg-slate-700 border border-slate-700 py-1.5 rounded text-slate-200">
-                +5名追加
-              </button>
-              <button onclick="addMockPlayers(10)" class="bg-slate-800 active:bg-slate-700 border border-slate-700 py-1.5 rounded text-slate-200">
-                +10名追加
-              </button>
-              <button onclick="removeMockPlayers()" class="bg-rose-950/50 active:bg-rose-900/70 border border-rose-800/40 py-1.5 rounded text-rose-300">
-                ダミー削除
-              </button>
-            </div>
-          </div>
-        </details>
-
-      </div>
-
-    </main>
-
-    <!-- 順位表画面用：自分の順位・得点固定バー -->
-    <div id="stickyMyBar" class="hidden fixed bottom-0 left-0 right-0 max-w-sm mx-auto bg-slate-900/95 border-t border-blue-500/50 backdrop-blur px-4 py-2 flex justify-between items-center z-50">
-      <div class="flex items-center space-x-2">
-        <span id="stickyMyRank" class="text-sm font-black text-amber-400 font-mono">--位</span>
-        <span class="text-xs font-semibold text-slate-200">あなた</span>
-      </div>
-      <span id="stickyMyScore" class="text-base font-black text-blue-400">0 pts</span>
-    </div>
+  <div class="pn mg space-y-2">
+    <b class="text-xs" style="color:var(--mg)">出題者</b>
+    <div class="grid grid-cols-2 gap-1.5"><button id="mdQuiz" onclick="pickMode('quiz')" class="btn sm sel">ボードクイズ</button><button id="mdMochi" onclick="pickMode('mochi')" class="btn sm">持ち寄りボード</button></div>
+    <input type="text" id="createEventTitle" placeholder="企画名（例: 合宿2R）" class="inp">
+    <input type="number" id="createSize" value="34" min="2" max="99" placeholder="参加人数（セット数）" class="inp hidden">
+    <input type="text" id="createRoomPass" placeholder="参加パスワード（任意）" class="inp">
+    <button onclick="createRoom()" class="btn mg w-full text-sm">ルームを作成</button>
+    <button id="resumeBtn" onclick="resumeHost()" class="btn w-full text-sm hidden">前回のルームを再開</button>
   </div>
+</div>
 
-  <!-- 出題者用 独立設定モーダル -->
-  <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 backdrop-blur-sm">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl flex flex-col max-h-[85vh] overflow-hidden shadow-2xl">
-      <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950">
-        <span class="font-bold text-xs text-slate-200">出題者設定</span>
-        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-base">&times;</button>
-      </div>
-
-      <!-- 3タブ切り替え -->
-      <div class="flex border-b border-slate-800 text-xs bg-slate-950/60 font-bold">
-        <button id="tabBtnPointSettings" onclick="switchSettingsTab('points')" class="flex-1 py-2 text-center border-b-2 border-blue-500 text-blue-400 transition">得点設定</button>
-        <button id="tabBtnQuestionSettings" onclick="switchSettingsTab('questions')" class="flex-1 py-2 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">問題設定</button>
-        <button id="tabBtnPlayerSettings" onclick="switchSettingsTab('players')" class="flex-1 py-2 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">参加者管理</button>
-      </div>
-
-      <div class="p-3 overflow-y-auto flex-1 space-y-3 text-xs">
-        
-        <!-- 1. 得点設定タブ -->
-        <div id="settingsTabContentPoints" class="space-y-3">
-          <div class="space-y-2">
-            <span class="text-[11px] font-bold text-blue-400 block border-b border-slate-800 pb-1">正解グループ</span>
-            <div class="space-y-1.5 text-slate-300">
-              <div class="flex justify-between items-center">
-                <span>通常正解:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_norm_win', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_norm_win" type="number" value="1" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_norm_win', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>早押し正解:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_fast_win', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_fast_win" type="number" value="3" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_fast_win', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>起立正解:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_stand_win', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_stand_win" type="number" value="2" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_stand_win', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-2 pt-1 border-t border-slate-800">
-            <span class="text-[11px] font-bold text-rose-400 block border-b border-slate-800 pb-1">誤答グループ</span>
-            <div class="space-y-1.5 text-slate-300">
-              <div class="flex justify-between items-center">
-                <span>通常誤答:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_norm_lose', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_norm_lose" type="number" value="0" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_norm_lose', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>早押し誤答:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_fast_lose', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_fast_lose" type="number" value="-3" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_fast_lose', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>起立誤答:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_stand_lose', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_stand_lose" type="number" value="-2" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_stand_lose', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-2 pt-1 border-t border-slate-800">
-            <div class="flex justify-between items-center">
-              <span class="text-[11px] font-bold text-amber-400">少数・単独正解ボーナス</span>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="cfg_enable_bonus" checked onchange="toggleBonusEnabled()" class="sr-only peer">
-                <div class="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-
-            <div id="bonusSettingsContainer" class="space-y-1.5 text-slate-300">
-              <div class="flex justify-between items-center">
-                <span>単独正解ボーナス:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_solo_bonus', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_solo_bonus" type="number" value="2" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_solo_bonus', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>少数正解ボーナス:</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_few_bonus', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_few_bonus" type="number" value="1" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_few_bonus', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>少数正解の閾値 (以下):</span>
-                <div class="flex items-center space-x-1">
-                  <button onclick="stepValue('cfg_few_threshold', -1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">-</button>
-                  <input id="cfg_few_threshold" type="number" value="3" readonly class="w-10 bg-slate-950 border border-slate-700 rounded text-center py-0.5 text-white font-bold">
-                  <button onclick="stepValue('cfg_few_threshold', 1)" class="w-6 h-6 bg-slate-800 border border-slate-700 rounded font-bold hover:bg-slate-700">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
+<!-- メイン -->
+<div id="mainAppView" class="hidden max-w-sm mx-auto min-h-screen flex flex-col pb-16">
+  <header class="sticky top-0 z-40 px-3 py-2 space-y-1.5" style="background:#050813f2;border-bottom:1px solid var(--cy);box-shadow:0 2px 16px #25e8ff22">
+    <div class="flex justify-between items-center">
+      <div class="flex items-center gap-2"><button onclick="leaveRoom()" class="text-xs mu">退出</button><span id="badge" class="num text-[11px] font-bold px-1.5 py-0.5" style="border:1px solid var(--ln)">ROOM ----</span></div>
+      <div class="flex items-center gap-1.5">
+        <button id="btnSet" onclick="openSettingsModal()" class="btn sm hidden">設定</button>
+        <div id="tabsMochi" style="display:none;border:1px solid var(--ln)"><button id="mt-play" onclick="setMTab('play')" class="tab on">今セット</button><button id="mt-total" onclick="setMTab('total')" class="tab">累計</button><button id="mt-matrix" onclick="setMTab('matrix')" class="tab">対戦表</button></div>
+        <div id="tabsQuiz" class="flex" style="border:1px solid var(--ln)">
+          <button id="tab-player" onclick="setTab('player')" class="tab on">解答</button>
+          <button id="tab-scoreboard" onclick="setTab('scoreboard')" class="tab">順位</button>
+          <button id="tab-host" onclick="setTab('host')" class="tab hidden">出題</button>
         </div>
-
-        <!-- 2. 問題設定タブ -->
-        <div id="settingsTabContentQuestions" class="hidden space-y-3">
-          <div class="space-y-1">
-            <span class="text-[11px] font-bold text-slate-300 block">企画名・ラウンド名</span>
-            <div class="flex gap-1.5">
-              <input type="text" id="settingsEventTitle" placeholder="企画名" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              <button onclick="saveEventTitle()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded-lg text-xs">変更</button>
-            </div>
-          </div>
-
-          <div class="space-y-1 pt-1 border-t border-slate-800">
-            <span class="text-[11px] font-bold text-slate-300 block">CSV問題読込</span>
-            <input type="file" accept=".csv" onchange="handleCSVUpload(event)" class="block w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-blue-950 file:text-blue-400">
-          </div>
-
-          <div class="space-y-1.5 pt-1 border-t border-slate-800">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold text-slate-300">現在の問題編集</span>
-              <div class="flex items-center space-x-1">
-                <span class="text-[10px] text-slate-400">Q</span>
-                <input type="number" id="hostQNum" value="1" class="w-8 bg-slate-950 border border-slate-700 rounded text-center text-white py-0.5 text-xs">
-              </div>
-            </div>
-            <textarea id="hostQText" rows="2" placeholder="問題文" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white focus:outline-none"></textarea>
-            <div class="grid grid-cols-2 gap-1.5">
-              <input type="text" id="hostAText" placeholder="正解" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none">
-              <input type="text" id="hostCText" placeholder="解説" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none">
-            </div>
-          </div>
-
-          <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-1.5">
-            <button onclick="hostVoidCurrentQuestion()" class="bg-amber-950/40 border border-amber-800/40 text-amber-400 py-1.5 rounded text-[10px] font-bold">
-              この問を無効化
-            </button>
-            <button onclick="hostResetScores()" class="bg-rose-950/40 border border-rose-800/40 text-rose-400 py-1.5 rounded text-[10px] font-bold">
-              得点リセット
-            </button>
-          </div>
-
-          <div class="space-y-1 pt-1 border-t border-slate-800">
-            <span class="text-[11px] font-bold text-slate-300 block">全問リスト一覧</span>
-            <div id="managerListItems" class="max-h-36 overflow-y-auto space-y-1 p-1 bg-slate-950 rounded-lg border border-slate-800"></div>
-          </div>
-        </div>
-
-        <!-- 3. 参加者管理タブ（個別得点修正） -->
-        <div id="settingsTabContentPlayers" class="hidden space-y-2">
-          <span class="text-[11px] font-bold text-slate-300 block border-b border-slate-800 pb-1">参加者スコア直接編集</span>
-          <div id="playerManagerList" class="max-h-60 overflow-y-auto space-y-1.5 pr-0.5"></div>
-        </div>
-
-      </div>
-
-      <div class="p-2 border-t border-slate-800 bg-slate-950">
-        <button onclick="closeSettingsModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded-xl text-xs font-bold">閉じる</button>
       </div>
     </div>
-  </div>
+    <div id="displayEventTitle" class="text-xs font-bold truncate">ボードクイズ企画</div>
+  </header>
 
+  <main class="flex-1 p-3 space-y-3">
+    <div id="playerView" class="space-y-3">
+      <div class="pn space-y-2">
+        <div class="flex justify-between items-center"><span class="text-xs mu">合計得点</span><span id="myCurrentScore" class="hd text-2xl font-black">0 pts</span></div>
+        <div class="space-y-1 pt-1"><div class="flex justify-between text-[11px] mu"><span>採点進捗</span><span id="playerSubmissionText" class="num">0 / 0人</span></div>
+          <div class="bar"><i id="playerProgressBar"></i></div></div>
+      </div>
+      <div class="pn mg space-y-2">
+        <div class="flex justify-between items-center"><span id="pQNum" class="num font-black" style="color:var(--mg)">Q1</span><span id="pStatusBadge" class="text-[11px] font-bold mu">待機中</span></div>
+        <div id="pQText" class="text-base font-bold leading-snug min-h-[40px] flex items-center">出題待機中…</div>
+        <div id="pAnsBox" class="hidden space-y-2 pt-2 border-t border-[#1c2b5a]">
+          <div class="p-2" style="background:#06283a;border:1px solid var(--cy)"><span class="text-[10px] font-bold block" style="color:var(--cy)">正解</span><span id="pAText" class="text-lg font-black">--</span></div>
+          <div id="pCommentBox" class="hidden p-2 text-xs" style="background:#050813;border:1px solid var(--ln)"><span id="pCText">--</span></div>
+        </div>
+      </div>
+      <div id="btnScoreBox" class="off grid grid-cols-2 gap-2"></div>
+    </div>
+
+    <div id="scoreboardView" class="hidden"><div class="pn"><b class="hd text-xs block mb-2">RANKING</b><div id="scoreboardList"></div></div></div>
+
+    <div id="hostView" class="hidden space-y-3">
+      <div class="pn space-y-3" style="box-shadow:0 0 24px #25e8ff22">
+        <div class="flex justify-between items-center border-b border-[#1c2b5a] pb-2">
+          <div class="flex items-center gap-2"><span id="readerQNum" class="hd text-lg font-black">Q1</span><span class="text-[11px] mu">問読みカード</span></div>
+          <div class="flex gap-1"><button onclick="hostPrevQuestion()" class="btn sm">前へ</button><button onclick="hostNextQuestionManual()" class="btn sm">次へ</button></div>
+        </div>
+        <div id="readerQText" class="text-[18px] font-bold leading-relaxed min-h-[64px]">（問題文をセットしてください）</div>
+        <div class="flex justify-between items-center px-3 py-2" style="background:#06283a;border:1px solid var(--cy)"><span class="text-[11px] font-bold" style="color:var(--cy)">正解</span><span id="readerAText" class="text-lg font-black">--</span></div>
+        <div id="readerCBox" class="hidden px-3 py-2" style="background:#050813;border:1px solid var(--ln)"><span class="text-[11px] mu block">解説</span><span id="readerCText" class="text-sm">--</span></div>
+      </div>
+      <div class="pn mg space-y-2">
+        <div class="flex justify-between text-xs"><span class="mu">Room <b id="hostRoom" class="num" style="color:var(--tx)">----</b></span><span id="hostSubmissionText" class="num font-bold" style="color:var(--cy)">採点済 0 / 0人 (0%)</span></div>
+        <div class="bar"><i id="hostProgressBar"></i></div>
+        <button id="btnQuickOpen" onclick="hostActionOpenCurrent()" class="btn sel w-full py-3 text-sm">1. この問題を表示（採点開始）</button>
+        <button id="btnQuickCloseNext" onclick="hostActionCloseAndNext()" class="btn mg w-full py-3 text-sm" disabled>2. 締め切って次の問題へ</button>
+      </div>
+      <details class="pn text-xs"><summary class="font-bold cursor-pointer" style="color:var(--yl)">テスト用ダミープレイヤー</summary>
+        <div class="pt-2 space-y-2">
+          <label class="flex items-center gap-2"><input type="checkbox" id="chkAutoBotSubmit" checked>正解表示時にBotが自動採点</label>
+          <div class="grid grid-cols-3 gap-1.5"><button class="btn sm" onclick="addMockPlayers(5)">+5名</button><button class="btn sm" onclick="addMockPlayers(10)">+10名</button><button class="btn mg sm" onclick="removeMockPlayers()">削除</button></div>
+        </div></details>
+    </div>
+    <div id="mochiView" class="hidden space-y-3">
+      <div class="pn"><div id="mSub" class="num text-xs font-bold" style="color:var(--cy)">SET 1</div><div id="mBanner" class="hidden text-sm font-bold mt-1" style="color:var(--yl)"></div></div>
+      <div id="mGm" class="hidden pn mg flex justify-between items-center gap-2"><span class="text-xs font-bold" style="color:var(--mg)">GM進行</span><div id="mGmBtns" class="flex gap-1.5"></div></div>
+      <div id="mPlay" class="space-y-3">
+        <div id="mSetList"></div>
+        <div id="mPanel" class="sticky bottom-2 pn mg space-y-2 hidden" style="background:#050813f5">
+          <div id="mPres" class="hidden text-center py-3"><div class="hd text-lg font-black">あなたが出題者です</div><p class="text-xs mu mt-1">問題を読み上げてください。今セットの得点計算からは除外されます。</p></div>
+          <div id="mNorm" class="space-y-2">
+            <div class="flex justify-between text-xs"><b id="mName">--</b><span id="mTot" class="num mu">通算 0 pt</span></div>
+            <div id="mLock" class="text-center text-xs font-bold" style="color:var(--yl)"></div>
+            <div class="flex items-center justify-center gap-6">
+              <div class="text-center"><b id="mPlus" class="num text-4xl" style="color:var(--cy)">0</b><span class="block text-[10px] mu">今セット正解</span></div><span class="mu text-2xl">−</span>
+              <div class="text-center"><b id="mMinus" class="num text-4xl" style="color:var(--mg)">0</b><span class="block text-[10px] mu">今セット誤答</span></div></div>
+            <div class="text-center text-xs"><span class="mu">今セット得点</span> <b id="mNet" class="num text-base">0 pt</b></div>
+            <div id="mBtns" class="grid grid-cols-2 gap-2"><button class="btn act big" onclick="mAdd('plus')">+1</button><button class="btn mg act big" onclick="mAdd('minus')">−1</button><button class="btn sm col-span-2" onclick="mUndo()">元に戻す</button></div>
+          </div>
+        </div>
+      </div>
+      <div id="mTotal" class="hidden pn"><b class="hd text-xs block mb-2">TOTAL RANKING</b><div id="mTotList"></div></div>
+      <div id="mMatrix" class="hidden pn !p-0"><div class="p-2 flex justify-between items-center border-b border-[#1c2b5a]"><span id="mxHead" class="text-xs font-bold" style="color:var(--yl)">対戦表</span><button class="btn sm" onclick="exportMatrixCSV()">CSV保存</button></div><div id="mxBox" class="overflow-auto" style="max-height:70vh"></div></div>
+    </div>
+  </main>
+
+  <div id="stickyMyBar" class="hidden fixed bottom-0 left-0 right-0 max-w-sm mx-auto px-4 py-2 flex justify-between items-center z-50" style="background:#050813f5;border-top:1px solid var(--cy)">
+    <div class="flex items-center gap-2"><span id="stickyMyRank" class="num font-black" style="color:var(--yl)">--位</span><span class="text-xs font-bold">あなた</span></div>
+    <span id="stickyMyScore" class="hd font-black">0 pts</span>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div id="settingsModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-3" style="background:#000c;backdrop-filter:blur(4px)">
+  <div class="pn w-full max-w-sm flex flex-col max-h-[85vh] !p-0">
+    <div class="p-3 flex justify-between items-center border-b border-[#1c2b5a]"><b class="hd text-xs">HOST SETTINGS</b><button onclick="closeSettingsModal()" class="text-xl mu px-2">&times;</button></div>
+    <div class="flex border-b border-[#1c2b5a]"><button id="tab-s-points" onclick="switchSettingsTab('points')" class="tab on flex-1 py-2">得点設定</button><button id="tab-s-questions" onclick="switchSettingsTab('questions')" class="tab flex-1 py-2">問題設定</button><button id="tab-s-roster" onclick="switchSettingsTab('roster')" class="tab flex-1 py-2 hidden">名簿設定</button></div>
+    <div class="p-3 overflow-y-auto flex-1 text-xs">
+      <div id="settingsTab-points"><div id="stepWrap" class="space-y-3"></div></div>
+      <div id="settingsTab-roster" class="hidden space-y-2"><div class="flex gap-1.5"><input id="mTitle" class="inp" placeholder="企画名"><button onclick="saveEventTitle()" class="btn sm shrink-0">変更</button></div>
+        <b>名簿の一括登録・修正</b><span class="mu block">出題順に1行ずつ「1,佐藤」または「佐藤」。行を増やすと人数（セット数）も増えます。</span>
+        <textarea id="rosterText" rows="10" class="inp num"></textarea><button onclick="saveRoster()" class="btn sel w-full py-2">名簿を反映</button></div>
+      <div id="settingsTab-questions" class="hidden space-y-3">
+        <div class="space-y-1"><b>企画名・ラウンド名</b><div class="flex gap-1.5"><input id="settingsEventTitle" class="inp" placeholder="企画名"><button onclick="saveEventTitle()" class="btn sm shrink-0">変更</button></div></div>
+        <div class="space-y-1 pt-2 border-t border-[#1c2b5a]"><b>CSV問題読込</b><span class="mu block">列: 問題,正解,解説（先頭に番号列があってもOK）</span><input type="file" accept=".csv" onchange="handleCSVUpload(event)" class="block w-full mu"></div>
+        <div class="space-y-1.5 pt-2 border-t border-[#1c2b5a]">
+          <div class="flex justify-between items-center"><b>現在の問題編集</b><span class="mu">Q <input type="number" id="hostQNum" value="1" min="1" onchange="loadQ(this.value)" class="inp !w-14 text-center !py-0.5 inline-block"></span></div>
+          <textarea id="hostQText" rows="2" placeholder="問題文" oninput="refreshReader()" class="inp"></textarea>
+          <div class="grid grid-cols-2 gap-1.5"><input id="hostAText" placeholder="正解" oninput="refreshReader()" class="inp"><input id="hostCText" placeholder="解説" oninput="refreshReader()" class="inp"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-[#1c2b5a]"><button onclick="hostVoidCurrentQuestion()" class="btn sm">この問を無効化</button><button onclick="hostResetScores()" class="btn mg sm">得点リセット</button></div>
+        <div class="space-y-1 pt-2 border-t border-[#1c2b5a]"><b>全問リスト</b><div id="managerListItems" class="max-h-40 overflow-y-auto space-y-1"></div></div>
+      </div>
+    </div>
+    <div class="p-2 border-t border-[#1c2b5a]"><button onclick="closeSettingsModal()" class="btn w-full text-sm">閉じる</button></div>
+  </div>
+</div>
 </body>
 </html>
