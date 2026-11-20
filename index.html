@@ -5,35 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Quiz Board Live</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Orbitron:wght@600;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#04050d;--ln:#1c2b5a;--cy:#25e8ff;--mg:#ff3df0;--yl:#ffe14d;--tx:#e8f3ff;--mu:#7c8bb8}
+:root{--bg:#04050d;--ln:#1e3066;--cy:#25e8ff;--mg:#ff3df0;--yl:#ffe14d;--tx:#eef6ff;--mu:#8fa0cf}
 html{background:var(--bg)}
 body{font-family:'Chakra Petch','Noto Sans JP',system-ui,sans-serif;color:var(--tx);min-height:100vh;
 background:radial-gradient(900px 500px at 90% -10%,#3a0f6a66,transparent),radial-gradient(700px 500px at -10% 100%,#06405a66,transparent),var(--bg)}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:70;background:linear-gradient(#25e8ff0b 1px,transparent 1px) 0 0/100% 4px}
-.num,.hd{font-family:Orbitron,sans-serif;letter-spacing:.04em}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:70;background:linear-gradient(#25e8ff08 1px,transparent 1px) 0 0/100% 4px}
+.num,.hd{font-family:'Orbitron',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.05em}
 .hd{color:var(--cy);text-shadow:0 0 14px #25e8ff88,2px 0 var(--mg)}
 .mu{color:var(--mu)}
-.pn{background:#0a0f22e8;border:1px solid var(--ln);border-left:3px solid var(--cy);padding:12px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%)}
+.pn{background:#0a1026ee;border:1px solid var(--ln);border-left:3px solid var(--cy);padding:14px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%)}
 .pn.mg{border-left-color:var(--mg)}
-.inp{width:100%;background:#050813;border:1px solid var(--ln);color:var(--tx);padding:8px 10px;font-size:14px}
+.inp{width:100%;background:#050814;border:1px solid var(--ln);color:var(--tx);padding:10px 12px;font-size:15px;border-radius:2px}
 .inp:focus,:focus-visible{outline:none;border-color:var(--cy);box-shadow:0 0 0 1px var(--cy),0 0 12px #25e8ff55}
-.btn{background:#0d1a3a;border:1px solid var(--cy);color:var(--cy);padding:10px 12px;font-weight:700;cursor:pointer;transition:.15s;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+.btn{background:#0d1c40;border:1.5px solid var(--cy);color:var(--cy);padding:12px 14px;font-weight:700;cursor:pointer;transition:.15s;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
 .btn:active,.btn.sel{background:var(--cy);color:#001018}
 .btn.mg,.act.lose{border-color:var(--mg);color:var(--mg)}
 .btn.mg:active,.act.lose.sel{background:var(--mg);color:#14001a}
-.btn.sm{padding:3px 8px;font-size:12px}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.ghost{background:transparent;border:1px solid var(--ln);color:var(--mu);clip-path:none}
 .btn:disabled{opacity:.35;border-color:var(--ln);color:var(--mu);cursor:not-allowed}
-.act{display:flex;justify-content:space-between;align-items:center;padding:13px 12px;font-size:14px}
-.act.big{flex-direction:column;gap:2px;padding:24px 8px;font-size:17px}
-.off{opacity:.3;pointer-events:none;transition:opacity .2s}
-.tab{padding:4px 10px;color:var(--mu);font-size:12px;font-weight:700}.tab.on{background:var(--cy);color:#001018}
-.bar{height:6px;background:#050813;border:1px solid var(--ln)}
+.act{display:flex;justify-content:space-between;align-items:center;padding:15px 14px;font-size:15px}
+.act.big{flex-direction:column;gap:4px;padding:24px 10px;font-size:18px}
+.act b.num{font-size:20px}
+.act.big b.num{font-size:26px}
+.off{opacity:.32;pointer-events:none;transition:opacity .2s}
+.tab{padding:6px 12px;color:var(--mu);font-size:12px;font-weight:700}.tab.on{background:var(--cy);color:#001018}
+.bar{height:8px;background:#050813;border:1px solid var(--ln);border-radius:2px;overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cy),var(--mg));transition:width .3s}
-.rk{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-bottom:1px solid #16224a}
-.rk.me{background:#0c2a4a;border:1px solid var(--cy)}
-.tag{font-size:9px;padding:1px 4px;border:1px solid currentColor;margin-left:4px}
+.rk{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-bottom:1px solid #16224a}
+.rk.me{background:#0c2d52;border:1px solid var(--cy)}
+.tag{font-size:10px;padding:1px 5px;border:1px solid currentColor;margin-left:6px;vertical-align:middle}
 .glitch{animation:gl .35s steps(2) 1}
 @keyframes gl{0%{transform:translateX(-4px);text-shadow:2px 0 var(--mg),-2px 0 var(--cy)}50%{transform:translateX(4px)}100%{transform:none}}
 @keyframes bonusPop{0%{transform:scale(.8) translateY(20px);opacity:0}15%{transform:scale(1.05);opacity:1}25%,85%{transform:scale(1);opacity:1}100%{transform:scale(.9) translateY(-20px);opacity:0}}
@@ -61,15 +64,23 @@ let roomId=LS.quiz_room_id||null,pid=LS.quiz_player_id||null,isHost=LS.quiz_is_h
 const R=()=>`${mode==='mochi'?'motiyori_rooms':'rooms'}/${roomId}`;
 let questions=JSON.parse(LS.quiz_questions||'[]'),players={},state=null,cfg={...DEF},botT=[],lastBonusQ=0,hostInit=false,firstP=true;
 
+/* ---------- 初期画面ナビゲーション ---------- */
+W.authScreen=s=>{
+  ['authMenu','authJoin','authCreate'].forEach(id=>$(id).classList.toggle('hidden',id!==s));
+  if(s==='authJoin')setTimeout(()=>$('joinRoomId').focus(),50);
+  if(s==='authCreate')setTimeout(()=>$('createEventTitle').focus(),50);
+};
+
 /* ---------- 入室 ---------- */
 W.addEventListener('DOMContentLoaded',()=>{
   $('btnScoreBox').innerHTML=['fast','stand','norm'].map(t=>['win','lose'].map(r=>{const k=t+'_'+r;
     return `<button id="b_${k}" onclick="submitAction('${k}')" class="btn act ${r} ${t==='norm'?'big':''}"><span>${LBL[k]}</span><b id="bd_${k}" class="num"></b></button>`}).join('')).join('');
-  const u=new URLSearchParams(location.search).get('room');if(u)$('joinRoomId').value=u;
+  const u=new URLSearchParams(location.search).get('room');
+  if(u){$('joinRoomId').value=u;W.authScreen('authJoin')}
   if(LS.quiz_host_last)$('resumeBtn').classList.remove('hidden');
   if(roomId&&(isHost||(mode==='mochi'?myOrder:pid)))enter();
 });
-W.pickMode=m=>{newMode=m;$('mdQuiz').classList.toggle('sel',m==='quiz');$('mdMochi').classList.toggle('sel',m==='mochi');$('createSize').classList.toggle('hidden',m!=='mochi')};
+W.pickMode=m=>{newMode=m;$('mdQuiz').classList.toggle('sel',m==='quiz');$('mdMochi').classList.toggle('sel',m==='mochi');$('createSizeBox').classList.toggle('hidden',m!=='mochi')};
 W.createRoom=async()=>{
   try{
     let id,ex;
@@ -134,7 +145,7 @@ function bind(){
   if(mode==='mochi')return bindMochi();
   onValue(ref(db,`${R()}/gameState`),s=>{
     const st=s.val();if(!st)return;const prev=state;state=st;
-    if(isHost&&!hostInit){ /* ホストのリロード時に設定と問題番号を復元 */
+    if(isHost&&!hostInit){
       hostInit=true;cfg={...DEF,...st.pointConfig};drawSteppers();
       const n=st.status==='closed'?st.qNum+1:st.qNum;$('hostQNum').value=n;loadQ(n-1);
     }
@@ -149,15 +160,17 @@ function bind(){
     L.forEach(p=>p.tie=L.filter(x=>x.rank===p.rank).length>1);
     const me=L.find(p=>p.id===pid);
     if(me&&!isHost){
-      $('myCurrentScore').textContent=`${me.score} pts`;$('stickyMyRank').textContent=(me.tie?'T':'')+me.rank+'位';$('stickyMyScore').textContent=`${me.score} pts`;
+      $('myCurrentScore').textContent=me.score;
+      $('stickyMyRank').textContent=(me.tie?'T':'')+me.rank+'位';
+      $('stickyMyScore').textContent=`${me.score} pts`;
       const q=state?.qNum||1,h=me.history?.['q'+q];
       if(h?.bonus&&lastBonusQ!==q){lastBonusQ=q;if(!firstP)banner(h.bonus,`+${h.bonusPts||''}pt`)}
     }
     firstP=false;
-    $('scoreboardList').innerHTML=L.map(p=>`<div class="rk ${p.id===pid&&!isHost?'me':''}"><div class="flex items-center gap-3">
-      <span class="num text-xs w-8 text-center font-bold" style="color:${p.rank===1?'var(--yl)':p.rank===2?'#cfe0ff':p.rank===3?'#ff9a4d':'var(--mu)'}">${p.tie?'T':''}${p.rank}</span>
-      <span class="text-sm font-bold">${esc(p.name)}${p.id===pid&&!isHost?'<span class="tag" style="color:var(--cy)">YOU</span>':''}${p.isBot?'<span class="tag mu">BOT</span>':''}</span></div>
-      <span class="num text-sm font-bold" style="color:${p.score>0?'var(--cy)':p.score<0?'var(--mg)':'var(--mu)'}">${p.score}</span></div>`).join('');
+    $('scoreboardList').innerHTML=L.map(p=>`<div class="rk ${p.id===pid&&!isHost?'me':''}"><div class="flex items-center gap-3 min-w-0">
+      <span class="num text-base w-10 text-center font-black shrink-0" style="color:${p.rank===1?'var(--yl)':p.rank===2?'#cfe0ff':p.rank===3?'#ff9a4d':'var(--mu)'}">${p.tie?'T':''}${p.rank}</span>
+      <span class="text-sm font-bold truncate">${esc(p.name)}${p.id===pid&&!isHost?'<span class="tag" style="color:var(--cy)">YOU</span>':''}${p.isBot?'<span class="tag mu">BOT</span>':''}</span></div>
+      <span class="num text-xl font-black shrink-0" style="color:${p.score>0?'var(--cy)':p.score<0?'var(--mg)':'var(--mu)'}">${p.score}</span></div>`).join('');
     progress();hl();
   });
 }
@@ -167,7 +180,7 @@ function progress(){
   $('hostSubmissionText').textContent=`採点済 ${d} / ${n}人 (${pc}%)`;$('hostProgressBar').style.width=pc+'%';
   $('playerSubmissionText').textContent=`${d} / ${n}人`;$('playerProgressBar').style.width=pc+'%';
 }
-function hl(){ /* 今の問題で自分が選んだボタンだけを光らせる（前問の選択は残さない） */
+function hl(){
   const a=state&&players[pid]?.history?.['q'+state.qNum]?.action;
   document.querySelectorAll('.act').forEach(b=>b.classList.toggle('sel',b.id==='b_'+a));
 }
@@ -178,7 +191,9 @@ function drawPlayer(){
   $('pAnsBox').classList.toggle('hidden',sb);$('pAText').textContent=s.aText||'解答なし';
   $('pCommentBox').classList.toggle('hidden',!(s.cText||'').trim());$('pCText').textContent=s.cText||'';
   $('btnScoreBox').classList.toggle('off',!on);
-  const b=$('pStatusBadge');b.textContent=sb?'待機中':on?'採点中':'締切済み（前問表示中）';b.style.color=on?'var(--cy)':'var(--mu)';
+  const b=$('pStatusBadge');
+  b.textContent=sb?'待機中':on?'採点できます':'締切済み（前問表示中）';
+  b.style.color=on?'var(--cy)':'var(--mu)';
 }
 W.submitAction=k=>{
   if(isHost||!pid||!state||state.status!=='answer')return;
@@ -211,13 +226,13 @@ const stepQ=d=>{const v=Math.max(1,(+$('hostQNum').value||1)+d);$('hostQNum').va
 W.hostPrevQuestion=()=>stepQ(-1);W.hostNextQuestionManual=()=>stepQ(1);
 W.hostActionOpenCurrent=()=>set(ref(db,`${R()}/gameState`),{qNum:+$('hostQNum').value||1,qText:$('hostQText').value,aText:$('hostAText').value,cText:$('hostCText').value,pointConfig:cfg,status:'answer'});
 W.hostActionCloseAndNext=async()=>{
-  await bonuses(state.qNum); /* 表示中の問題番号で計算（フォームの番号ではない） */
+  await bonuses(state.qNum);
   await update(ref(db,`${R()}/gameState`),{status:'closed'});
   stepQ(1);
 };
 function drawHostBtns(){
   const a=state.status==='answer';$('btnQuickOpen').disabled=a;$('btnQuickCloseNext').disabled=!a;
-  $('btnQuickOpen').className='btn w-full py-3 text-sm '+(a?'':'sel');$('btnQuickCloseNext').className='btn mg w-full py-3 text-sm '+(a?'sel':'');
+  $('btnQuickOpen').className='btn w-full py-3.5 text-sm '+(a?'':'sel');$('btnQuickCloseNext').className='btn mg w-full py-3.5 text-sm '+(a?'sel':'');
 }
 async function bonuses(q){
   if(!cfg.enable_bonus)return;
@@ -227,7 +242,7 @@ async function bonuses(q){
   if(n===1&&cfg.solo_bonus>0){b=cfg.solo_bonus;t='単独正解 BONUS'}
   else if(n&&n<=cfg.few_threshold&&cfg.few_bonus>0){b=cfg.few_bonus;t=`少数正解 BONUS (${n}人)`}
   const u={},names=[];
-  Object.entries(ps).forEach(([id,p])=>{ /* 何度締めても二重加算しないよう、基礎点を引いてから再計算 */
+  Object.entries(ps).forEach(([id,p])=>{
     const h=p.history||{},e=h[k];if(!e||e.action==='void')return;
     const isW=b>0&&WINS.includes(e.action),pts=(e.pts||0)-(e.bonusPts||0)+(isW?b:0),base=`${R()}/players/${id}/`;
     if(isW)names.push(p.name);
@@ -257,14 +272,14 @@ function drawSteppers(){
   $('stepWrap').innerHTML=GROUPS.map(([g,rows],i)=>`<div class="space-y-2 ${i?'pt-2 border-t border-[#1c2b5a]':''}">
     <div class="flex justify-between items-center"><b class="hd text-xs">${g}</b>${i===2?`<label class="text-xs mu flex items-center gap-1"><input type="checkbox" ${cfg.enable_bonus?'checked':''} onchange="toggleBonus(this.checked)">有効</label>`:''}</div>
     <div id="${i===2?'bonusBox':'g'+i}" class="space-y-2 ${i===2&&!cfg.enable_bonus?'opacity-40':''}">${rows.map(([k,l])=>`<div class="flex justify-between items-center text-sm"><span>${l}</span>
-    <div class="flex items-center gap-1"><button class="btn sm" onclick="stepValue('${k}',-1)">−</button><b id="v_${k}" class="num w-9 text-center">${cfg[k]}</b><button class="btn sm" onclick="stepValue('${k}',1)">＋</button></div></div>`).join('')}</div></div>`).join('');
+    <div class="flex items-center gap-1.5"><button class="btn sm" onclick="stepValue('${k}',-1)">−</button><b id="v_${k}" class="num text-base w-10 text-center">${cfg[k]}</b><button class="btn sm" onclick="stepValue('${k}',1)">＋</button></div></div>`).join('')}</div></div>`).join('');
 }
 const sync=()=>roomId&&update(ref(db,`${R()}/gameState`),{pointConfig:cfg});
 W.stepValue=(k,d)=>{cfg[k]=(cfg[k]||0)+d;if(/bonus|threshold/.test(k))cfg[k]=Math.max(0,cfg[k]);$('v_'+k).textContent=cfg[k];sync()};
 W.toggleBonus=on=>{cfg.enable_bonus=on;$('bonusBox').classList.toggle('opacity-40',!on);sync()};
 
 /* ---------- CSV ---------- */
-function parseRows(t){ /* 引用符・カンマ入りの問題文に対応 */
+function parseRows(t){
   const r=[];let row=[],c='',q=false;
   for(let i=0;i<t.length;i++){const ch=t[i];
     if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
@@ -275,7 +290,7 @@ function parseRows(t){ /* 引用符・カンマ入りの問題文に対応 */
 W.handleCSVUpload=e=>{
   const f=e.target.files[0];if(!f)return;const rd=new FileReader();
   rd.onload=()=>{let t;
-    try{t=new TextDecoder('utf-8',{fatal:true}).decode(rd.result)}catch{t=new TextDecoder('shift_jis').decode(rd.result)} /* Excel保存のShift_JIS対応 */
+    try{t=new TextDecoder('utf-8',{fatal:true}).decode(rd.result)}catch{t=new TextDecoder('shift_jis').decode(rd.result)}
     const rows=parseRows(t.replace(/^\uFEFF/,''));
     if(rows[0]?.some(c=>/^(正解|答え?|解答|answer)$/i.test(c)))rows.shift();
     questions=rows.filter(c=>c.length>=2).map(c=>/^\d+$/.test(c[0])&&c.length>=3?{q:c[1],a:c[2],c:c[3]||''}:{q:c[0],a:c[1],c:c[2]||''});
@@ -313,6 +328,7 @@ function botSim(){
       update(ref(db,`${R()}/players/${id}`),{history:h,score:Object.values(h).reduce((s,v)=>s+(v.pts||0),0)})},400+Math.random()*1600));
   });
 }
+
 /* ---------- 持ち寄りボード ---------- */
 let mS={},mP={},mM={},mH=[],mBusy=0,mTab='play';
 const mList=()=>Object.entries(mP).map(([id,p])=>({id,...p})).sort((a,b)=>a.order-b.order);
@@ -326,13 +342,13 @@ function bindMochi(){
 function drawMochi(){
   const L=mList(),n=L.length,set=mS.currentSet||1,st=mS.status||'standby',pr=L[set-1],done=st==='done';
   const isPres=p=>!done&&p.id===pr?.id,mine=p=>p.order===myOrder&&!isHost;
-  $('mSub').textContent=done?'全セット終了':`SET ${set} / ${n}　出題: ${pr?`${pr.name} (#${pr.order})`:'-'}`;
+  $('mSub').textContent=done?'全セット終了':`SET ${set} / ${n} 出題: ${pr?`${pr.name} (#${pr.order})`:'-'}`;
   $('mBanner').classList.toggle('hidden',st==='standby'||done||!pr);$('mBanner').textContent=pr?`出題者: ${pr.name}`:'';
-  const row=(p,right)=>`<div class="rk ${mine(p)?'me':''}"><div class="flex items-center gap-2 min-w-0"><span class="num text-[10px] mu">#${p.order}</span><span class="text-sm font-bold truncate">${esc(p.name)}</span>${mine(p)?'<span class="tag" style="color:var(--cy)">YOU</span>':''}</div>${right}</div>`;
+  const row=(p,right)=>`<div class="rk ${mine(p)?'me':''}"><div class="flex items-center gap-2.5 min-w-0"><span class="num text-xs mu">#${p.order}</span><span class="text-sm font-bold truncate">${esc(p.name)}</span>${mine(p)?'<span class="tag" style="color:var(--cy)">YOU</span>':''}</div>${right}</div>`;
   $('mSetList').innerHTML='<div class="pn !p-1">'+[...L].sort((a,b)=>isPres(a)-isPres(b)||sc(b)-sc(a)||(b.currentPlus||0)-(a.currentPlus||0))
-    .map(p=>row(p,isPres(p)?'<span class="tag" style="color:var(--yl)">出題</span>':`<b class="num text-base" style="color:${col(sc(p))}">${sgn(sc(p))}</b>`)).join('')+'</div>';
+    .map(p=>row(p,isPres(p)?'<span class="tag" style="color:var(--yl)">出題</span>':`<b class="num text-xl font-black" style="color:${col(sc(p))}">${sgn(sc(p))}</b>`)).join('')+'</div>';
   $('mTotList').innerHTML=[...L].sort((a,b)=>(b.score||0)-(a.score||0)||(b.totalPlus||0)-(a.totalPlus||0))
-    .map(p=>row(p,`<b class="num text-lg" style="color:${col(p.score||0)}">${p.score||0}<small class="mu text-xs"> pt</small></b>`)).join('');
+    .map(p=>row(p,`<b class="num text-xl font-black" style="color:${col(p.score||0)}">${p.score||0}<small class="mu text-xs font-normal"> pt</small></b>`)).join('');
   const me=mP['p_'+myOrder],pres=me&&isPres(me);
   $('mPanel').classList.toggle('hidden',isHost||!me);$('mPres').classList.toggle('hidden',!pres);$('mNorm').classList.toggle('hidden',!!pres);
   if(me){$('mName').textContent=`${me.name} (#${me.order})`;$('mTot').textContent=`通算 ${me.score||0} pt`;$('mPlus').textContent=me.currentPlus||0;$('mMinus').textContent=me.currentMinus||0;$('mNet').textContent=sgn(sc(me))+' pt'}
@@ -343,7 +359,6 @@ function drawMochi(){
       :st==='in_set'?`<button class="btn mg sm" onclick="mSt('confirm')">出題終了（点数確認）</button>`
       :st==='confirm'?`<button class="btn sm" onclick="mSt('in_set')">修正再開</button><button class="btn sel sm" onclick="mNext()">${set>=n?'得点確定して終了':'得点確定→次へ'}</button>`:''}
 }
-/* 連打しても取りこぼさないよう increment で加算 */
 W.mAdd=t=>{
   if(isHost||!myOrder||mS.status!=='in_set'||mList()[(mS.currentSet||1)-1]?.order===myOrder)return;
   const k=t==='plus'?'currentPlus':'currentMinus';mH.push(k);update(ref(db,`${R()}/players/p_${myOrder}`),{[k]:increment(1)});
@@ -363,7 +378,7 @@ W.mNext=async()=>{
       const isP=p.id===pr?.id,pl=isP?0:p.currentPlus||0,mi=isP?0:p.currentMinus||0,row={...(mM[p.id]||{})};
       if(isP)delete row['set_'+set];else row['set_'+set]=pl-mi;
       u[`${b}/matrix/${p.id}/set_${set}`]=isP?null:pl-mi;
-      u[`${b}/players/${p.id}/score`]=Object.values(row).reduce((a,x)=>a+(+x||0),0); /* 対戦表の合計から再計算 */
+      u[`${b}/players/${p.id}/score`]=Object.values(row).reduce((a,x)=>a+(+x||0),0);
       u[`${b}/players/${p.id}/totalPlus`]=(p.totalPlus||0)+pl;u[`${b}/players/${p.id}/totalMinus`]=(p.totalMinus||0)+mi;
       u[`${b}/players/${p.id}/currentPlus`]=0;u[`${b}/players/${p.id}/currentMinus`]=0;
     });
@@ -374,18 +389,18 @@ W.mNext=async()=>{
 function drawMatrix(){
   const L=mList(),n=L.length;
   let h='<table class="min-w-full text-xs border-collapse"><thead><tr style="background:#0a0f22"><th class="p-2 text-left sticky left-0 z-20" style="background:#0a0f22;min-width:120px">解答者</th>';
-  for(let s=1;s<=n;s++)h+=`<th class="p-1.5 text-center" style="min-width:64px"><div class="num">S${s}</div><div class="text-[9px] truncate" style="color:var(--yl);max-width:60px">${esc(L[s-1].name)}</div></th>`;
-  h+='<th class="p-2 sticky right-0 z-20 num" style="background:#0a0f22;color:var(--cy)">計</th></tr></thead><tbody>';
+  for(let s=1;s<=n;s++)h+=`<th class="p-1.5 text-center" style="min-width:64px"><div class="num text-xs">S${s}</div><div class="text-[10px] truncate" style="color:var(--yl);max-width:60px">${esc(L[s-1].name)}</div></th>`;
+  h+='<th class="p-2 sticky right-0 z-20 num text-xs" style="background:#0a0f22;color:var(--cy)">計</th></tr></thead><tbody>';
   L.forEach(p=>{
     const row=mM[p.id]||{};let sum=0;
     h+=`<tr class="border-b border-[#16224a]"><td class="p-2 font-bold sticky left-0 z-10 truncate" style="background:${p.order===myOrder&&!isHost?'#0c2a4a':'#060a18'}">#${p.order} ${esc(p.name)}</td>`;
     for(let s=1;s<=n;s++){
       const v=row['set_'+s],has=v!=null;if(has)sum+=+v;
       h+=L[s-1].id===p.id?'<td class="text-center text-[10px]" style="color:var(--yl)">出題</td>'
-        :isHost?`<td class="text-center"><input type="number" value="${has?+v:''}" placeholder="-" onchange="mCell(${p.order},${s},this.value)" class="num w-14 bg-transparent text-center py-1 font-bold outline-none focus:bg-[#0c2a4a]" style="color:${col(+v)}"></td>`
-        :`<td class="num text-center font-bold" style="color:${col(+v)}">${has?sgn(+v):'-'}</td>`;
+        :isHost?`<td class="text-center"><input type="number" value="${has?+v:''}" placeholder="-" onchange="mCell(${p.order},${s},this.value)" class="num text-sm w-14 bg-transparent text-center py-1 font-bold outline-none focus:bg-[#0c2a4a]" style="color:${col(+v)}"></td>`
+        :`<td class="num text-sm text-center font-bold" style="color:${col(+v)}">${has?sgn(+v):'-'}</td>`;
     }
-    h+=`<td class="num text-center font-black sticky right-0 z-10" style="background:#060a18;color:var(--cy)">${sum}</td></tr>`;
+    h+=`<td class="num text-sm text-center font-black sticky right-0 z-10" style="background:#060a18;color:var(--cy)">${sum}</td></tr>`;
   });
   $('mxBox').innerHTML=h+'</tbody></table>';$('mxHead').textContent=isHost?'対戦表（タップして修正できます）':'対戦表（閲覧のみ）';
 }
@@ -415,41 +430,102 @@ W.exportMatrixCSV=()=>{
 <body>
 
 <div id="bonusBanner" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-[80] pointer-events-none w-11/12 max-w-xs">
-  <div class="p-3 text-center" style="background:linear-gradient(90deg,var(--mg),var(--yl));color:#10001a;border:2px solid #fff;box-shadow:0 0 30px var(--mg)">
-    <div id="bonusTitle" class="num text-xs font-black">BONUS</div><div id="bonusDetail" class="num text-sm font-black mt-0.5">+2pt</div>
+  <div class="p-3.5 text-center" style="background:linear-gradient(90deg,var(--mg),var(--yl));color:#10001a;border:2px solid #fff;box-shadow:0 0 30px var(--mg)">
+    <div id="bonusTitle" class="num text-xs font-black">BONUS</div><div id="bonusDetail" class="num text-base font-black mt-0.5">+2pt</div>
   </div>
 </div>
 
-<!-- ログイン -->
-<div id="authView" class="max-w-xs mx-auto px-4 min-h-screen flex flex-col justify-center space-y-5">
-  <div class="text-center"><h1 class="hd text-2xl font-black">BOARD QUIZ<br>LIVE</h1><p class="text-xs mu mt-2">得点管理システム</p></div>
-  <div class="pn space-y-3">
-    <b class="text-sm">参加する</b>
-    <div><label class="text-xs mu block mb-1">ルーム番号（4桁）</label><input type="number" id="joinRoomId" placeholder="0000" class="inp num text-center text-lg font-bold"></div>
-    <div><label class="text-xs mu block mb-1">名前 / 席番号</label><input type="text" id="joinPlayerName" placeholder="名前" class="inp"></div>
-    <div><label class="text-xs mu block mb-1">出題順の番号（持ち寄りボードのみ）</label><input type="number" id="joinOrderNum" placeholder="例: 5" class="inp num"></div>
-    <div><label class="text-xs mu block mb-1">パスワード（設定されている場合）</label><input type="password" id="joinRoomPass" class="inp"></div>
-    <button onclick="joinRoom()" class="btn sel w-full py-3 text-sm">入室する</button>
+<!-- ログイン（2ステップ） -->
+<div id="authView" class="max-w-sm mx-auto px-5 min-h-screen flex flex-col justify-center space-y-6">
+  <div class="text-center">
+    <h1 class="hd text-3xl font-black leading-tight">BOARD QUIZ<br>LIVE</h1>
+    <p class="text-xs mu mt-2 tracking-widest">REALTIME SCOREBOARD</p>
   </div>
-  <div class="pn mg space-y-2">
-    <b class="text-xs" style="color:var(--mg)">出題者</b>
-    <div class="grid grid-cols-2 gap-1.5"><button id="mdQuiz" onclick="pickMode('quiz')" class="btn sm sel">ボードクイズ</button><button id="mdMochi" onclick="pickMode('mochi')" class="btn sm">持ち寄りボード</button></div>
-    <input type="text" id="createEventTitle" placeholder="企画名（例: 合宿2R）" class="inp">
-    <input type="number" id="createSize" value="34" min="2" max="99" placeholder="参加人数（セット数）" class="inp hidden">
-    <input type="text" id="createRoomPass" placeholder="参加パスワード（任意）" class="inp">
-    <button onclick="createRoom()" class="btn mg w-full text-sm">ルームを作成</button>
-    <button id="resumeBtn" onclick="resumeHost()" class="btn w-full text-sm hidden">前回のルームを再開</button>
+
+  <!-- ステップ1：選択メニュー -->
+  <div id="authMenu" class="space-y-3">
+    <button onclick="authScreen('authJoin')" class="btn sel w-full py-5 text-base flex flex-col items-center gap-1">
+      <span>ルームに参加する</span>
+      <span class="text-[11px] font-normal opacity-80">解答者として入室</span>
+    </button>
+    <button onclick="authScreen('authCreate')" class="btn mg w-full py-5 text-base flex flex-col items-center gap-1">
+      <span>ルームを作成する</span>
+      <span class="text-[11px] font-normal opacity-80">出題者・GMとして開始</span>
+    </button>
+    <button id="resumeBtn" onclick="resumeHost()" class="btn ghost w-full py-3 text-sm hidden">前回のホストルームを再開</button>
+  </div>
+
+  <!-- ステップ2A：参加フォーム -->
+  <div id="authJoin" class="hidden pn space-y-3.5">
+    <div class="flex justify-between items-center border-b border-[#1e3066] pb-2">
+      <b class="text-base" style="color:var(--cy)">ルームに参加</b>
+      <button onclick="authScreen('authMenu')" class="text-xs mu px-2 py-1">← 戻る</button>
+    </div>
+    <div>
+      <label class="text-xs mu block mb-1">ルーム番号（4桁）</label>
+      <input type="number" id="joinRoomId" inputmode="numeric" placeholder="0000" class="inp num text-center text-2xl font-black tracking-widest">
+    </div>
+    <div>
+      <label class="text-xs mu block mb-1">名前 / 席番号</label>
+      <input type="text" id="joinPlayerName" placeholder="表示名を入力" class="inp">
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="text-[11px] mu block mb-1">出題順（持ち寄りのみ）</label>
+        <input type="number" id="joinOrderNum" inputmode="numeric" placeholder="例: 5" class="inp num text-center">
+      </div>
+      <div>
+        <label class="text-[11px] mu block mb-1">パスワード（任意）</label>
+        <input type="password" id="joinRoomPass" placeholder="設定時のみ" class="inp">
+      </div>
+    </div>
+    <button onclick="joinRoom()" class="btn sel w-full py-3.5 text-base">入室する</button>
+  </div>
+
+  <!-- ステップ2B：作成フォーム -->
+  <div id="authCreate" class="hidden pn mg space-y-3.5">
+    <div class="flex justify-between items-center border-b border-[#1e3066] pb-2">
+      <b class="text-base" style="color:var(--mg)">ルームを作成</b>
+      <button onclick="authScreen('authMenu')" class="text-xs mu px-2 py-1">← 戻る</button>
+    </div>
+    <div>
+      <label class="text-xs mu block mb-1.5">企画モード</label>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="mdQuiz" onclick="pickMode('quiz')" class="btn sm sel py-2.5">ボードクイズ</button>
+        <button id="mdMochi" onclick="pickMode('mochi')" class="btn sm py-2.5">持ち寄りボード</button>
+      </div>
+    </div>
+    <div>
+      <label class="text-xs mu block mb-1">企画名</label>
+      <input type="text" id="createEventTitle" placeholder="例: 合宿2R ボードクイズ" class="inp">
+    </div>
+    <div id="createSizeBox" class="hidden">
+      <label class="text-xs mu block mb-1">参加人数（＝セット数）</label>
+      <input type="number" id="createSize" value="34" min="2" max="99" class="inp num text-lg font-bold">
+    </div>
+    <div>
+      <label class="text-xs mu block mb-1">参加パスワード（任意）</label>
+      <input type="text" id="createRoomPass" placeholder="未入力ならパスワードなし" class="inp">
+    </div>
+    <button onclick="createRoom()" class="btn mg sel w-full py-3.5 text-base">ルームを作成して開始</button>
   </div>
 </div>
 
 <!-- メイン -->
-<div id="mainAppView" class="hidden max-w-sm mx-auto min-h-screen flex flex-col pb-16">
-  <header class="sticky top-0 z-40 px-3 py-2 space-y-1.5" style="background:#050813f2;border-bottom:1px solid var(--cy);box-shadow:0 2px 16px #25e8ff22">
-    <div class="flex justify-between items-center">
-      <div class="flex items-center gap-2"><button onclick="leaveRoom()" class="text-xs mu">退出</button><span id="badge" class="num text-[11px] font-bold px-1.5 py-0.5" style="border:1px solid var(--ln)">ROOM ----</span></div>
-      <div class="flex items-center gap-1.5">
+<div id="mainAppView" class="hidden max-w-md mx-auto min-h-screen flex flex-col pb-20">
+  <header class="sticky top-0 z-40 px-3 py-2.5 space-y-1.5" style="background:#050813f2;border-bottom:1px solid var(--cy);box-shadow:0 2px 16px #25e8ff22">
+    <div class="flex justify-between items-center gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <button onclick="leaveRoom()" class="text-xs mu px-1.5 py-1 border border-[#1e3066]">退出</button>
+        <span id="badge" class="num text-xs font-bold px-2 py-1 truncate" style="border:1px solid var(--ln);color:var(--cy)">ROOM ----</span>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
         <button id="btnSet" onclick="openSettingsModal()" class="btn sm hidden">設定</button>
-        <div id="tabsMochi" style="display:none;border:1px solid var(--ln)"><button id="mt-play" onclick="setMTab('play')" class="tab on">今セット</button><button id="mt-total" onclick="setMTab('total')" class="tab">累計</button><button id="mt-matrix" onclick="setMTab('matrix')" class="tab">対戦表</button></div>
+        <div id="tabsMochi" style="display:none;border:1px solid var(--ln)">
+          <button id="mt-play" onclick="setMTab('play')" class="tab on">今セット</button>
+          <button id="mt-total" onclick="setMTab('total')" class="tab">累計</button>
+          <button id="mt-matrix" onclick="setMTab('matrix')" class="tab">対戦表</button>
+        </div>
         <div id="tabsQuiz" class="flex" style="border:1px solid var(--ln)">
           <button id="tab-player" onclick="setTab('player')" class="tab on">解答</button>
           <button id="tab-scoreboard" onclick="setTab('scoreboard')" class="tab">順位</button>
@@ -457,103 +533,172 @@ W.exportMatrixCSV=()=>{
         </div>
       </div>
     </div>
-    <div id="displayEventTitle" class="text-xs font-bold truncate">ボードクイズ企画</div>
+    <div id="displayEventTitle" class="text-xs font-bold truncate mu">ボードクイズ企画</div>
   </header>
 
-  <main class="flex-1 p-3 space-y-3">
-    <div id="playerView" class="space-y-3">
-      <div class="pn space-y-2">
-        <div class="flex justify-between items-center"><span class="text-xs mu">合計得点</span><span id="myCurrentScore" class="hd text-2xl font-black">0 pts</span></div>
-        <div class="space-y-1 pt-1"><div class="flex justify-between text-[11px] mu"><span>採点進捗</span><span id="playerSubmissionText" class="num">0 / 0人</span></div>
-          <div class="bar"><i id="playerProgressBar"></i></div></div>
-      </div>
-      <div class="pn mg space-y-2">
-        <div class="flex justify-between items-center"><span id="pQNum" class="num font-black" style="color:var(--mg)">Q1</span><span id="pStatusBadge" class="text-[11px] font-bold mu">待機中</span></div>
-        <div id="pQText" class="text-base font-bold leading-snug min-h-[40px] flex items-center">出題待機中…</div>
-        <div id="pAnsBox" class="hidden space-y-2 pt-2 border-t border-[#1c2b5a]">
-          <div class="p-2" style="background:#06283a;border:1px solid var(--cy)"><span class="text-[10px] font-bold block" style="color:var(--cy)">正解</span><span id="pAText" class="text-lg font-black">--</span></div>
-          <div id="pCommentBox" class="hidden p-2 text-xs" style="background:#050813;border:1px solid var(--ln)"><span id="pCText">--</span></div>
+  <main class="flex-1 p-3.5 space-y-3.5">
+    <!-- 解答者画面 -->
+    <div id="playerView" class="space-y-3.5">
+      <div class="pn space-y-2.5">
+        <div class="flex justify-between items-baseline">
+          <span class="text-xs mu font-bold">現在の得点</span>
+          <div class="flex items-baseline gap-1">
+            <span id="myCurrentScore" class="hd text-4xl font-black">0</span>
+            <span class="num text-sm mu font-bold">pts</span>
+          </div>
+        </div>
+        <div class="space-y-1 pt-1">
+          <div class="flex justify-between text-xs mu"><span>みんなの採点進捗</span><span id="playerSubmissionText" class="num font-bold text-white">0 / 0人</span></div>
+          <div class="bar"><i id="playerProgressBar"></i></div>
         </div>
       </div>
-      <div id="btnScoreBox" class="off grid grid-cols-2 gap-2"></div>
+
+      <div class="pn mg space-y-2.5">
+        <div class="flex justify-between items-center">
+          <span id="pQNum" class="num text-xl font-black" style="color:var(--mg)">Q1</span>
+          <span id="pStatusBadge" class="text-xs font-bold px-2 py-0.5 border border-current mu">待機中</span>
+        </div>
+        <div id="pQText" class="text-base font-bold leading-relaxed min-h-[44px] flex items-center">出題待機中…</div>
+        <div id="pAnsBox" class="hidden space-y-2 pt-2 border-t border-[#1e3066]">
+          <div class="p-2.5" style="background:#06283a;border:1px solid var(--cy)">
+            <span class="text-[11px] font-bold block" style="color:var(--cy)">正解</span>
+            <span id="pAText" class="text-xl font-black">--</span>
+          </div>
+          <div id="pCommentBox" class="hidden p-2.5 text-xs leading-relaxed" style="background:#050813;border:1px solid var(--ln)"><span id="pCText">--</span></div>
+        </div>
+      </div>
+
+      <div id="btnScoreBox" class="off grid grid-cols-2 gap-2.5"></div>
     </div>
 
-    <div id="scoreboardView" class="hidden"><div class="pn"><b class="hd text-xs block mb-2">RANKING</b><div id="scoreboardList"></div></div></div>
+    <!-- 順位表 -->
+    <div id="scoreboardView" class="hidden">
+      <div class="pn !p-0">
+        <div class="px-3.5 py-2.5 border-b border-[#1e3066]"><b class="hd text-sm">RANKING</b></div>
+        <div id="scoreboardList"></div>
+      </div>
+    </div>
 
-    <div id="hostView" class="hidden space-y-3">
+    <!-- 出題者画面 -->
+    <div id="hostView" class="hidden space-y-3.5">
       <div class="pn space-y-3" style="box-shadow:0 0 24px #25e8ff22">
-        <div class="flex justify-between items-center border-b border-[#1c2b5a] pb-2">
-          <div class="flex items-center gap-2"><span id="readerQNum" class="hd text-lg font-black">Q1</span><span class="text-[11px] mu">問読みカード</span></div>
-          <div class="flex gap-1"><button onclick="hostPrevQuestion()" class="btn sm">前へ</button><button onclick="hostNextQuestionManual()" class="btn sm">次へ</button></div>
+        <div class="flex justify-between items-center border-b border-[#1e3066] pb-2">
+          <div class="flex items-center gap-2"><span id="readerQNum" class="hd text-2xl font-black">Q1</span><span class="text-xs mu">問読みカード</span></div>
+          <div class="flex gap-1.5"><button onclick="hostPrevQuestion()" class="btn sm">← 前へ</button><button onclick="hostNextQuestionManual()" class="btn sm">次へ →</button></div>
         </div>
         <div id="readerQText" class="text-[18px] font-bold leading-relaxed min-h-[64px]">（問題文をセットしてください）</div>
-        <div class="flex justify-between items-center px-3 py-2" style="background:#06283a;border:1px solid var(--cy)"><span class="text-[11px] font-bold" style="color:var(--cy)">正解</span><span id="readerAText" class="text-lg font-black">--</span></div>
-        <div id="readerCBox" class="hidden px-3 py-2" style="background:#050813;border:1px solid var(--ln)"><span class="text-[11px] mu block">解説</span><span id="readerCText" class="text-sm">--</span></div>
+        <div class="flex justify-between items-center px-3 py-2.5" style="background:#06283a;border:1px solid var(--cy)">
+          <span class="text-xs font-bold" style="color:var(--cy)">正解</span>
+          <span id="readerAText" class="text-xl font-black">--</span>
+        </div>
+        <div id="readerCBox" class="hidden px-3 py-2" style="background:#050813;border:1px solid var(--ln)">
+          <span class="text-[11px] mu block">解説</span><span id="readerCText" class="text-sm">--</span>
+        </div>
       </div>
-      <div class="pn mg space-y-2">
-        <div class="flex justify-between text-xs"><span class="mu">Room <b id="hostRoom" class="num" style="color:var(--tx)">----</b></span><span id="hostSubmissionText" class="num font-bold" style="color:var(--cy)">採点済 0 / 0人 (0%)</span></div>
+
+      <div class="pn mg space-y-2.5">
+        <div class="flex justify-between items-center text-xs">
+          <span class="mu">Room <b id="hostRoom" class="num text-base" style="color:var(--tx)">----</b></span>
+          <span id="hostSubmissionText" class="num text-sm font-bold" style="color:var(--cy)">採点済 0 / 0人 (0%)</span>
+        </div>
         <div class="bar"><i id="hostProgressBar"></i></div>
-        <button id="btnQuickOpen" onclick="hostActionOpenCurrent()" class="btn sel w-full py-3 text-sm">1. この問題を表示（採点開始）</button>
-        <button id="btnQuickCloseNext" onclick="hostActionCloseAndNext()" class="btn mg w-full py-3 text-sm" disabled>2. 締め切って次の問題へ</button>
+        <button id="btnQuickOpen" onclick="hostActionOpenCurrent()" class="btn sel w-full py-3.5 text-sm">1. この問題を表示（採点開始）</button>
+        <button id="btnQuickCloseNext" onclick="hostActionCloseAndNext()" class="btn mg w-full py-3.5 text-sm" disabled>2. 締め切って次の問題へ</button>
       </div>
-      <details class="pn text-xs"><summary class="font-bold cursor-pointer" style="color:var(--yl)">テスト用ダミープレイヤー</summary>
-        <div class="pt-2 space-y-2">
+
+      <details class="pn text-xs">
+        <summary class="font-bold cursor-pointer" style="color:var(--yl)">テスト用ダミープレイヤー</summary>
+        <div class="pt-2.5 space-y-2">
           <label class="flex items-center gap-2"><input type="checkbox" id="chkAutoBotSubmit" checked>正解表示時にBotが自動採点</label>
-          <div class="grid grid-cols-3 gap-1.5"><button class="btn sm" onclick="addMockPlayers(5)">+5名</button><button class="btn sm" onclick="addMockPlayers(10)">+10名</button><button class="btn mg sm" onclick="removeMockPlayers()">削除</button></div>
-        </div></details>
+          <div class="grid grid-cols-3 gap-2">
+            <button class="btn sm" onclick="addMockPlayers(5)">+5名</button>
+            <button class="btn sm" onclick="addMockPlayers(10)">+10名</button>
+            <button class="btn mg sm" onclick="removeMockPlayers()">削除</button>
+          </div>
+        </div>
+      </details>
     </div>
-    <div id="mochiView" class="hidden space-y-3">
-      <div class="pn"><div id="mSub" class="num text-xs font-bold" style="color:var(--cy)">SET 1</div><div id="mBanner" class="hidden text-sm font-bold mt-1" style="color:var(--yl)"></div></div>
-      <div id="mGm" class="hidden pn mg flex justify-between items-center gap-2"><span class="text-xs font-bold" style="color:var(--mg)">GM進行</span><div id="mGmBtns" class="flex gap-1.5"></div></div>
-      <div id="mPlay" class="space-y-3">
+
+    <!-- 持ち寄りボード -->
+    <div id="mochiView" class="hidden space-y-3.5">
+      <div class="pn">
+        <div id="mSub" class="num text-sm font-bold" style="color:var(--cy)">SET 1</div>
+        <div id="mBanner" class="hidden text-base font-bold mt-1" style="color:var(--yl)"></div>
+      </div>
+      <div id="mGm" class="hidden pn mg flex justify-between items-center gap-2">
+        <span class="text-xs font-bold" style="color:var(--mg)">GM進行</span>
+        <div id="mGmBtns" class="flex gap-1.5"></div>
+      </div>
+      <div id="mPlay" class="space-y-3.5">
         <div id="mSetList"></div>
-        <div id="mPanel" class="sticky bottom-2 pn mg space-y-2 hidden" style="background:#050813f5">
-          <div id="mPres" class="hidden text-center py-3"><div class="hd text-lg font-black">あなたが出題者です</div><p class="text-xs mu mt-1">問題を読み上げてください。今セットの得点計算からは除外されます。</p></div>
-          <div id="mNorm" class="space-y-2">
-            <div class="flex justify-between text-xs"><b id="mName">--</b><span id="mTot" class="num mu">通算 0 pt</span></div>
+        <div id="mPanel" class="sticky bottom-2 pn mg space-y-3 hidden" style="background:#050813f8">
+          <div id="mPres" class="hidden text-center py-3">
+            <div class="hd text-xl font-black">あなたが出題者です</div>
+            <p class="text-xs mu mt-1">問題を読み上げてください。今セットの得点計算からは除外されます。</p>
+          </div>
+          <div id="mNorm" class="space-y-2.5">
+            <div class="flex justify-between items-center text-xs"><b id="mName" class="text-sm">--</b><span id="mTot" class="num text-sm mu font-bold">通算 0 pt</span></div>
             <div id="mLock" class="text-center text-xs font-bold" style="color:var(--yl)"></div>
-            <div class="flex items-center justify-center gap-6">
-              <div class="text-center"><b id="mPlus" class="num text-4xl" style="color:var(--cy)">0</b><span class="block text-[10px] mu">今セット正解</span></div><span class="mu text-2xl">−</span>
-              <div class="text-center"><b id="mMinus" class="num text-4xl" style="color:var(--mg)">0</b><span class="block text-[10px] mu">今セット誤答</span></div></div>
-            <div class="text-center text-xs"><span class="mu">今セット得点</span> <b id="mNet" class="num text-base">0 pt</b></div>
-            <div id="mBtns" class="grid grid-cols-2 gap-2"><button class="btn act big" onclick="mAdd('plus')">+1</button><button class="btn mg act big" onclick="mAdd('minus')">−1</button><button class="btn sm col-span-2" onclick="mUndo()">元に戻す</button></div>
+            <div class="flex items-center justify-center gap-6 py-1">
+              <div class="text-center"><b id="mPlus" class="num text-5xl font-black" style="color:var(--cy)">0</b><span class="block text-xs mu mt-1">正解</span></div>
+              <span class="mu text-3xl font-bold">−</span>
+              <div class="text-center"><b id="mMinus" class="num text-5xl font-black" style="color:var(--mg)">0</b><span class="block text-xs mu mt-1">誤答</span></div>
+            </div>
+            <div class="text-center text-xs"><span class="mu">今セット得点</span> <b id="mNet" class="num text-xl font-black ml-1">0 pt</b></div>
+            <div id="mBtns" class="grid grid-cols-2 gap-2.5">
+              <button class="btn act big" onclick="mAdd('plus')"><b class="num">+1</b></button>
+              <button class="btn mg act big" onclick="mAdd('minus')"><b class="num">−1</b></button>
+              <button class="btn ghost sm col-span-2 py-2" onclick="mUndo()">1つ元に戻す</button>
+            </div>
           </div>
         </div>
       </div>
-      <div id="mTotal" class="hidden pn"><b class="hd text-xs block mb-2">TOTAL RANKING</b><div id="mTotList"></div></div>
-      <div id="mMatrix" class="hidden pn !p-0"><div class="p-2 flex justify-between items-center border-b border-[#1c2b5a]"><span id="mxHead" class="text-xs font-bold" style="color:var(--yl)">対戦表</span><button class="btn sm" onclick="exportMatrixCSV()">CSV保存</button></div><div id="mxBox" class="overflow-auto" style="max-height:70vh"></div></div>
+      <div id="mTotal" class="hidden pn !p-0">
+        <div class="px-3.5 py-2.5 border-b border-[#1e3066]"><b class="hd text-sm">TOTAL RANKING</b></div>
+        <div id="mTotList"></div>
+      </div>
+      <div id="mMatrix" class="hidden pn !p-0">
+        <div class="p-2.5 flex justify-between items-center border-b border-[#1e3066]">
+          <span id="mxHead" class="text-xs font-bold" style="color:var(--yl)">対戦表</span>
+          <button class="btn sm" onclick="exportMatrixCSV()">CSV保存</button>
+        </div>
+        <div id="mxBox" class="overflow-auto" style="max-height:70vh"></div>
+      </div>
     </div>
   </main>
 
-  <div id="stickyMyBar" class="hidden fixed bottom-0 left-0 right-0 max-w-sm mx-auto px-4 py-2 flex justify-between items-center z-50" style="background:#050813f5;border-top:1px solid var(--cy)">
-    <div class="flex items-center gap-2"><span id="stickyMyRank" class="num font-black" style="color:var(--yl)">--位</span><span class="text-xs font-bold">あなた</span></div>
-    <span id="stickyMyScore" class="hd font-black">0 pts</span>
+  <div id="stickyMyBar" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 py-2.5 flex justify-between items-center z-50" style="background:#050813f5;border-top:1px solid var(--cy)">
+    <div class="flex items-center gap-2.5"><span id="stickyMyRank" class="num text-lg font-black" style="color:var(--yl)">--位</span><span class="text-xs font-bold">あなた</span></div>
+    <span id="stickyMyScore" class="hd text-xl font-black">0 pts</span>
   </div>
 </div>
 
 <!-- 設定 -->
 <div id="settingsModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-3" style="background:#000c;backdrop-filter:blur(4px)">
   <div class="pn w-full max-w-sm flex flex-col max-h-[85vh] !p-0">
-    <div class="p-3 flex justify-between items-center border-b border-[#1c2b5a]"><b class="hd text-xs">HOST SETTINGS</b><button onclick="closeSettingsModal()" class="text-xl mu px-2">&times;</button></div>
-    <div class="flex border-b border-[#1c2b5a]"><button id="tab-s-points" onclick="switchSettingsTab('points')" class="tab on flex-1 py-2">得点設定</button><button id="tab-s-questions" onclick="switchSettingsTab('questions')" class="tab flex-1 py-2">問題設定</button><button id="tab-s-roster" onclick="switchSettingsTab('roster')" class="tab flex-1 py-2 hidden">名簿設定</button></div>
-    <div class="p-3 overflow-y-auto flex-1 text-xs">
+    <div class="p-3 flex justify-between items-center border-b border-[#1e3066]"><b class="hd text-xs">HOST SETTINGS</b><button onclick="closeSettingsModal()" class="text-xl mu px-2">&times;</button></div>
+    <div class="flex border-b border-[#1e3066]"><button id="tab-s-points" onclick="switchSettingsTab('points')" class="tab on flex-1 py-2.5">得点設定</button><button id="tab-s-questions" onclick="switchSettingsTab('questions')" class="tab flex-1 py-2.5">問題設定</button><button id="tab-s-roster" onclick="switchSettingsTab('roster')" class="tab flex-1 py-2.5 hidden">名簿設定</button></div>
+    <div class="p-3.5 overflow-y-auto flex-1 text-xs">
       <div id="settingsTab-points"><div id="stepWrap" class="space-y-3"></div></div>
-      <div id="settingsTab-roster" class="hidden space-y-2"><div class="flex gap-1.5"><input id="mTitle" class="inp" placeholder="企画名"><button onclick="saveEventTitle()" class="btn sm shrink-0">変更</button></div>
+      <div id="settingsTab-roster" class="hidden space-y-2.5">
+        <div class="flex gap-1.5"><input id="mTitle" class="inp" placeholder="企画名"><button onclick="saveEventTitle()" class="btn sm shrink-0">変更</button></div>
         <b>名簿の一括登録・修正</b><span class="mu block">出題順に1行ずつ「1,佐藤」または「佐藤」。行を増やすと人数（セット数）も増えます。</span>
-        <textarea id="rosterText" rows="10" class="inp num"></textarea><button onclick="saveRoster()" class="btn sel w-full py-2">名簿を反映</button></div>
+        <textarea id="rosterText" rows="10" class="inp num"></textarea>
+        <button onclick="saveRoster()" class="btn sel w-full py-2.5">名簿を反映</button>
+      </div>
       <div id="settingsTab-questions" class="hidden space-y-3">
         <div class="space-y-1"><b>企画名・ラウンド名</b><div class="flex gap-1.5"><input id="settingsEventTitle" class="inp" placeholder="企画名"><button onclick="saveEventTitle()" class="btn sm shrink-0">変更</button></div></div>
-        <div class="space-y-1 pt-2 border-t border-[#1c2b5a]"><b>CSV問題読込</b><span class="mu block">列: 問題,正解,解説（先頭に番号列があってもOK）</span><input type="file" accept=".csv" onchange="handleCSVUpload(event)" class="block w-full mu"></div>
-        <div class="space-y-1.5 pt-2 border-t border-[#1c2b5a]">
-          <div class="flex justify-between items-center"><b>現在の問題編集</b><span class="mu">Q <input type="number" id="hostQNum" value="1" min="1" onchange="loadQ(this.value)" class="inp !w-14 text-center !py-0.5 inline-block"></span></div>
+        <div class="space-y-1 pt-2 border-t border-[#1e3066]"><b>CSV問題読込</b><span class="mu block">列: 問題,正解,解説（先頭に番号列があってもOK）</span><input type="file" accept=".csv" onchange="handleCSVUpload(event)" class="block w-full mu"></div>
+        <div class="space-y-1.5 pt-2 border-t border-[#1e3066]">
+          <div class="flex justify-between items-center"><b>現在の問題編集</b><span class="mu">Q <input type="number" id="hostQNum" value="1" min="1" onchange="loadQ(this.value)" class="inp !w-16 text-center !py-1 inline-block num font-bold"></span></div>
           <textarea id="hostQText" rows="2" placeholder="問題文" oninput="refreshReader()" class="inp"></textarea>
           <div class="grid grid-cols-2 gap-1.5"><input id="hostAText" placeholder="正解" oninput="refreshReader()" class="inp"><input id="hostCText" placeholder="解説" oninput="refreshReader()" class="inp"></div>
         </div>
-        <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-[#1c2b5a]"><button onclick="hostVoidCurrentQuestion()" class="btn sm">この問を無効化</button><button onclick="hostResetScores()" class="btn mg sm">得点リセット</button></div>
-        <div class="space-y-1 pt-2 border-t border-[#1c2b5a]"><b>全問リスト</b><div id="managerListItems" class="max-h-40 overflow-y-auto space-y-1"></div></div>
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[#1e3066]"><button onclick="hostVoidCurrentQuestion()" class="btn sm">この問を無効化</button><button onclick="hostResetScores()" class="btn mg sm">得点リセット</button></div>
+        <div class="space-y-1 pt-2 border-t border-[#1e3066]"><b>全問リスト</b><div id="managerListItems" class="max-h-40 overflow-y-auto space-y-1"></div></div>
       </div>
     </div>
-    <div class="p-2 border-t border-[#1c2b5a]"><button onclick="closeSettingsModal()" class="btn w-full text-sm">閉じる</button></div>
+    <div class="p-2.5 border-t border-[#1e3066]"><button onclick="closeSettingsModal()" class="btn w-full text-sm">閉じる</button></div>
   </div>
 </div>
 </body>
